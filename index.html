@@ -6,37 +6,48 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <style>
-:root{--bg:#f9fafb;--card:#fff;--txt:#111;--muted:#6b7280;--line:#e5e7eb;--ok:#0a7a2a;--err:#b00020;--warn:#9a6b00}
+:root{
+  --bg:#0b1220;--card:#141b2d;--txt:#e6edf3;--muted:#9aa5b1;--line:#1f2a44;
+  --ok:#16a34a;--err:#ef4444;--warn:#d97706;--btn:#334155;--btn-t:#e6edf3
+}
+:root.light{
+  --bg:#f9fafb;--card:#fff;--txt:#111827;--muted:#6b7280;--line:#e5e7eb;
+  --ok:#0a7a2a;--err:#b00020;--warn:#9a6b00;--btn:#111827;--btn-t:#fff
+}
 *{box-sizing:border-box}
 body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--txt)}
 .wrap{max-width:1150px;margin:22px auto;padding:0 16px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin:12px 0;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin:12px 0;box-shadow:0 1px 3px rgba(0,0,0,.25)}
 h1{font-size:22px;margin:0 0 8px}
 h3{margin:0 0 10px}
-button,input,select{padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:14px}
-button{cursor:pointer;background:#111;color:#fff}
-button.secondary{background:#fff;color:#111}
-button.danger{background:#b00020}
-button.warning{background:#9a6b00}
+button,input,select{padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:14px;background:transparent;color:var(--txt)}
+button{cursor:pointer;background:var(--btn);color:var(--btn-t);border-color:transparent}
+button.secondary{background:transparent;color:var(--txt);border:1px solid var(--line)}
+button.danger{background:#7f1d1d}
+button.warning{background:#7a5210}
 .status{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;color:#fff}
 .s-none{background:var(--err)}
 .s-part{background:var(--warn)}
 .s-full{background:var(--ok)}
 table{width:100%;border-collapse:collapse}
 th,td{border-top:1px solid var(--line);padding:6px 10px;text-align:left;vertical-align:middle}
-th{background:#f3f4f6}
+th{background:#0f172a}
+:root.light th{background:#f3f4f6}
 .right{text-align:right}
 .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.summary{margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:8px;background:#f8fafc}
+.summary{margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:8px;background:#0f172a}
+:root.light .summary{background:#f8fafc}
 pre{background:#0b1220;color:#e6edf3;padding:12px;border-radius:10px;max-height:55vh;overflow:auto}
 .print-only{display:none}
 @media print{
   .no-print{display:none!important}
   .print-only{display:block}
   .card{border:none;box-shadow:none;margin:0;padding:0}
-  body{background:#fff}
-  th{background:#eee}
+  body{background:#fff;color:#000}
+  th{background:#eee;color:#000}
 }
+a{color:#93c5fd}
+small.muted{color:var(--muted)}
 </style>
 </head>
 <body>
@@ -48,6 +59,7 @@ pre{background:#0b1220;color:#e6edf3;padding:12px;border-radius:10px;max-height:
       <button onclick="showClients()">📋 Klienci</button>
       <button onclick="showProducts()">🌱 Produkty</button>
       <button onclick="showOrders()">📦 Zamówienia</button>
+      <button class="secondary" onclick="toggleTheme()" title="Przełącz motyw">🌙/☀️ Motyw</button>
     </div>
   </div>
 
@@ -65,6 +77,14 @@ const SUPABASE_URL = 'https://zseqkyjcqkuvrqxluihs.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzZXFreWpjcWt1dnJxeGx1aWhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzNDk2NjUsImV4cCI6MjA3NjkyNTY2NX0.ubbYQzYWiMyETohwKRnVQZaZRoIA-zwiX2YsY8TPsDk';
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// motyw
+(function initTheme(){ if(localStorage.getItem('theme')==='light') document.documentElement.classList.add('light');})();
+function toggleTheme(){
+  document.documentElement.classList.toggle('light');
+  localStorage.setItem('theme', document.documentElement.classList.contains('light')?'light':'dark');
+}
+
 const logOK = (t,d)=>document.getElementById('log').textContent='✅ '+t+'\n\n'+JSON.stringify(d,null,2);
 const logERR = (t,e)=>document.getElementById('log').textContent='❌ '+t+': '+(e?.message||e);
 const esc = s => (s??'').toString().replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -214,10 +234,10 @@ async function saveOrder(){
   showOrders();
 }
 
-// --- raport/lista ---
+// --- raport/lista + edycja/odbiór/usuń ---
 let _ordersRaw=[]; let _ordersFiltered=[];
-function sClass(q,f){ if((f||0)<=0) return 's-none'; if((f||0)<q) return 's-part'; return 's-full'; }
-function sLbl(q,f){ if((f||0)<=0) return 'Nieodebrane'; if((f||0)<q) return `Częściowo (${f}/${q})`; return `Odebrane (${q})`; }
+function sClass(q,f){ f=f||0; if(f<=0) return 's-none'; if(f<q) return 's-part'; return 's-full'; }
+function sLbl(q,f){ f=f||0; if(f<=0) return 'Nieodebrane'; if(f<q) return `Częściowo (${f}/${q})`; return `Odebrane (${q})`; }
 
 async function showOrders(){
   // 1) formularz – klienci i produkty
@@ -232,13 +252,13 @@ async function showOrders(){
   (products.data||[]).forEach(p=>productsCache.set(p.id,{name:p.name,price:Number(p.price)}));
 
   // 2) dane zamówień
-  const {data:errorData,error:eOrd}=await sb.from('orders')
-    .select(`id,order_date,total_amount,clients(name),order_items(id,quantity,fulfilled_qty,unit_price,products(name))`)
+  const {data:orders,error:eOrd}=await sb.from('orders')
+    .select(`id,order_date,total_amount,clients(name),order_items(id,product_id,quantity,fulfilled_qty,unit_price,products(name))`)
     .order('created_at',{ascending:false});
   if(eOrd) return logERR('Zamówienia',eOrd);
-  _ordersRaw=errorData||[]; _ordersFiltered=_ordersRaw.slice();
+  _ordersRaw=orders||[]; _ordersFiltered=_ordersRaw.slice();
 
-  // 3) UI: formularz + raport/filtry + lista
+  // 3) UI: formularz + raport/filtry + lista + podsumowanie "Do wydania"
   document.getElementById('view').innerHTML=`
     <div class="card">
       <h3>🧾 Utwórz zamówienie</h3>
@@ -267,7 +287,27 @@ async function showOrders(){
       </table>
     </div>
 
-    <div id="reportArea"></div>
+    <div class="card no-print" id="filtersCard">
+      <h3>Raport odbiorów</h3>
+      <div class="toolbar">
+        <label>Filtr statusu:</label>
+        <select id="fltStatus" onchange="applyFilters()">
+          <option value="all">Wszystkie</option>
+          <option value="open">Tylko nieodebrane</option>
+          <option value="partial">Częściowe</option>
+          <option value="full">W pełni odebrane</option>
+        </select>
+        <label>Zakres dat:</label>
+        <input id="fltFrom" type="date" onchange="applyFilters()">
+        <input id="fltTo" type="date" onchange="applyFilters()">
+        <button onclick="exportCSV()">⬇️ Eksport CSV</button>
+        <button onclick="printPDF()">🖨️ Drukuj PDF</button>
+      </div>
+      <div class="summary" id="summaryBox"></div>
+    </div>
+
+    <div id="ordersList"></div>
+    <div class="card" id="remainingCard"></div>
   `;
   updateUnitInfo(); refreshCartUI();
   renderOrdersUI();
@@ -307,59 +347,66 @@ function calcSummary(rows){
   return {totalQty,totalFulfilled:totalFul,pending,percent};
 }
 
+// agregat "Do wydania" (product -> suma brakującej ilości)
+function calcRemaining(rows){
+  const map=new Map();
+  rows.forEach(o=>{
+    (o.order_items||[]).forEach(i=>{
+      const rem=(i.quantity-(i.fulfilled_qty||0));
+      if(rem>0){
+        const key=i.products?.name||`#${i.product_id}`;
+        map.set(key,(map.get(key)||0)+rem);
+      }
+    });
+  });
+  // sort malejąco po ilości
+  return [...map.entries()].sort((a,b)=>b[1]-a[1]);
+}
+
 function renderOrdersUI(){
   const summary=calcSummary(_ordersFiltered);
-  const ordersHTML=_ordersFiltered.map(renderOrderBlock).join('')||'<p>Brak zamówień.</p>';
-  document.getElementById('reportArea').innerHTML=`
-    <div class="card no-print">
-      <h3>Raport odbiorów</h3>
-      <div class="toolbar">
-        <label>Filtr statusu:</label>
-        <select id="fltStatus" onchange="applyFilters()">
-          <option value="all">Wszystkie</option>
-          <option value="open">Tylko nieodebrane</option>
-          <option value="partial">Częściowe</option>
-          <option value="full">W pełni odebrane</option>
-        </select>
-        <label>Zakres dat:</label>
-        <input id="fltFrom" type="date" onchange="applyFilters()">
-        <input id="fltTo" type="date" onchange="applyFilters()">
-        <button onclick="exportCSV()">⬇️ Eksport CSV</button>
-        <button onclick="printPDF()">🖨️ Drukuj PDF</button>
-      </div>
-      <div class="summary">
-        <b>Łącznie odebrano:</b> ${summary.totalFulfilled} / ${summary.totalQty} (${summary.percent.toFixed(1)}%)<br>
-        <b>Pozycji nieodebranych:</b> ${summary.pending}
-      </div>
-    </div>
+  const ordersHTML=_ordersFiltered.map(renderOrderBlock).join('')||'<div class="card"><p>Brak zamówień.</p></div>';
 
-    <div class="card print-only">
-      <h3>Raport odbiorów – wydruk</h3>
-      <div><b>Łącznie:</b> ${summary.totalFulfilled} / ${summary.totalQty} (${summary.percent.toFixed(1)}%) • Nieodebranych: ${summary.pending}</div>
-    </div>
+  document.getElementById('summaryBox').innerHTML =
+    `<b>Łącznie odebrano:</b> ${summary.totalFulfilled} / ${summary.totalQty} (${summary.percent.toFixed(1)}%)<br>
+     <b>Pozycji nieodebranych:</b> ${summary.pending}`;
 
-    ${ordersHTML}
-  `;
+  document.getElementById('ordersList').innerHTML = ordersHTML;
+
+  const remaining=calcRemaining(_ordersFiltered);
+  document.getElementById('remainingCard').innerHTML =
+    `<h3>📦 Do wydania (pozostało)</h3>
+     <small class="muted">Agregat z wyłączeniem już odebranych (częściowo i w całości).</small>
+     <table style="margin-top:8px">
+       <thead><tr><th>Produkt</th><th class="right">Suma brakująca</th></tr></thead>
+       <tbody>${remaining.map(([name,qty])=>`<tr><td>${esc(name)}</td><td class="right">${qty}</td></tr>`).join('')}</tbody>
+     </table>`;
 }
 
 function renderOrderBlock(o){
   const items=(o.order_items||[]).map(i=>{
-    const cls=sClass(i.quantity,i.fulfilled_qty||0), lbl=sLbl(i.quantity,i.fulfilled_qty||0);
+    const f=i.fulfilled_qty||0;
+    const cls=sClass(i.quantity,f), lbl=sLbl(i.quantity,f);
     return `<tr>
       <td>${esc(i.products?.name||'')}</td>
       <td class="right">${i.quantity}</td>
-      <td class="right">${i.fulfilled_qty||0}</td>
+      <td class="right">${f}</td>
       <td class="right">${(i.unit_price||0).toFixed(2)}</td>
       <td class="right"><span class="status ${cls}">${lbl}</span></td>
       <td class="right no-print">
-        <button onclick="adjFulfilled('${i.id}',-1)">-1</button>
-        <button onclick="adjFulfilled('${i.id}',1)">+1</button>
-        <button class="warning" onclick="fulfillAll('${i.id}',${i.quantity})">Odbierz wszystko</button>
+        <button onclick="receiveQty('${i.id}', ${i.quantity}, ${f})">Odbierz</button>
+        <button class="warning" onclick="fulfillAll('${i.id}', ${i.quantity})">Odbierz wszystko</button>
       </td>
     </tr>`;
   }).join('');
   return `<div class="card">
-    <div><b>${o.order_date||''}</b> | ${esc(o.clients?.name||'—')} | <b>Razem: ${o.total_amount??''}</b></div>
+    <div style="display:flex;justify-content:space-between;gap:8px;align-items:center">
+      <div><b>${o.order_date||''}</b> | ${esc(o.clients?.name||'—')} | <b>Razem: ${o.total_amount??''}</b></div>
+      <div class="no-print">
+        <button class="secondary" onclick="editOrderDate('${o.id}','${o.order_date||''}')">Edytuj datę</button>
+        <button class="danger" onclick="deleteOrder('${o.id}')">Usuń zamówienie</button>
+      </div>
+    </div>
     <table style="margin-top:6px">
       <thead><tr><th>Produkt</th><th class="right">Ilość</th><th class="right">Odebrano</th><th class="right">Cena</th><th class="right">Status</th><th class="right no-print">Odbiór</th></tr></thead>
       <tbody>${items}</tbody>
@@ -367,14 +414,47 @@ function renderOrderBlock(o){
   </div>`;
 }
 
-async function adjFulfilled(itemId,delta){
-  const {data,error}=await sb.from('order_items').select('quantity,fulfilled_qty').eq('id',itemId).single();
+// odbiór częściowy
+async function receiveQty(itemId,qty,fulfilled){
+  const max = qty - (fulfilled||0);
+  if(max<=0) return alert('Ta pozycja jest już odebrana.');
+  const x = prompt(`Ile odebrać? (pozostało ${max})`, Math.min(1,max));
+  if(x==null) return;
+  let add = parseInt(x,10);
+  if(!(add>0)) return alert('Wpisz liczbę dodatnią.');
+  if(add>max) add=max;
+
+  const {data,error}=await sb.from('order_items').select('fulfilled_qty').eq('id',itemId).single();
   if(error) return logERR('Pobieranie pozycji',error);
-  let n=(data.fulfilled_qty||0)+delta; if(n<0)n=0; if(n>data.quantity)n=data.quantity;
-  await sb.from('order_items').update({fulfilled_qty:n}).eq('id',itemId);
+  const newVal = (data.fulfilled_qty||0)+add;
+  await sb.from('order_items').update({fulfilled_qty:newVal}).eq('id',itemId);
   applyFilters();
 }
-async function fulfillAll(itemId,qty){ await sb.from('order_items').update({fulfilled_qty:qty}).eq('id',itemId); applyFilters(); }
+
+// odbiór pełny
+async function fulfillAll(itemId,qty){
+  await sb.from('order_items').update({fulfilled_qty:qty}).eq('id',itemId);
+  applyFilters();
+}
+
+// edycja daty zamówienia
+async function editOrderDate(orderId,current){
+  const d = prompt('Data zamówienia (YYYY-MM-DD):', current||new Date().toISOString().slice(0,10));
+  if(!d) return;
+  await sb.from('orders').update({order_date:d}).eq('id',orderId);
+  applyFilters();
+}
+
+// usunięcie całego zamówienia (wraz z pozycjami)
+async function deleteOrder(orderId){
+  if(!confirm('Usunąć całe zamówienie?')) return;
+  // jeśli masz FK ON DELETE CASCADE, wystarczy jedna linia poniżej:
+  await sb.from('orders').delete().eq('id',orderId);
+  // w przeciwnym razie (gdyby nie usuwało pozycji), odkomentuj najpierw:
+  // await sb.from('order_items').delete().eq('order_id',orderId);
+  // await sb.from('orders').delete().eq('id',orderId);
+  showOrders();
+}
 
 // === Export CSV (widok po filtrach) ===
 function exportCSV(){
