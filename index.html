@@ -1,480 +1,563 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-<meta charset="UTF-8" />
-<title>SeedOrders2 – Zamówienia & Raport odbiorów</title>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>SeedOrders — wspólna baza</title>
 <style>
-:root{
-  --bg:#0b1220;--card:#141b2d;--txt:#e6edf3;--muted:#9aa5b1;--line:#1f2a44;
-  --ok:#16a34a;--err:#ef4444;--warn:#d97706;--btn:#334155;--btn-t:#e6edf3
-}
-:root.light{
-  --bg:#f9fafb;--card:#fff;--txt:#111827;--muted:#6b7280;--line:#e5e7eb;
-  --ok:#0a7a2a;--err:#b00020;--warn:#9a6b00;--btn:#111827;--btn-t:#fff
-}
-*{box-sizing:border-box}
-body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--txt)}
-.wrap{max-width:1150px;margin:22px auto;padding:0 16px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin:12px 0;box-shadow:0 1px 3px rgba(0,0,0,.25)}
-h1{font-size:22px;margin:0 0 8px}
-h3{margin:0 0 10px}
-button,input,select{padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:14px;background:transparent;color:var(--txt)}
-button{cursor:pointer;background:var(--btn);color:var(--btn-t);border-color:transparent}
-button.secondary{background:transparent;color:var(--txt);border:1px solid var(--line)}
-button.danger{background:#7f1d1d}
-button.warning{background:#7a5210}
-.status{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;color:#fff}
-.s-none{background:var(--err)}
-.s-part{background:var(--warn)}
-.s-full{background:var(--ok)}
-table{width:100%;border-collapse:collapse}
-th,td{border-top:1px solid var(--line);padding:6px 10px;text-align:left;vertical-align:middle}
-th{background:#0f172a}
-:root.light th{background:#f3f4f6}
-.right{text-align:right}
-.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.summary{margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:8px;background:#0f172a}
-:root.light .summary{background:#f8fafc}
-pre{background:#0b1220;color:#e6edf3;padding:12px;border-radius:10px;max-height:55vh;overflow:auto}
-.print-only{display:none}
-@media print{
-  .no-print{display:none!important}
-  .print-only{display:block}
-  .card{border:none;box-shadow:none;margin:0;padding:0}
-  body{background:#fff;color:#000}
-  th{background:#eee;color:#000}
-}
-a{color:#93c5fd}
-small.muted{color:var(--muted)}
+  :root{
+    --bg:#0b1020;--card:#121a2a;--ink:#e6f0ff;--muted:#a8b3c7;--brand:#3aa675;
+    --line:#24314a;--ok:#2ea043;--warn:#e3b341;--bad:#d73a49
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px system-ui,Segoe UI,Roboto,Arial}
+  h2{margin:18px 0 10px}
+  .wrap{max-width:1180px;margin:20px auto;padding:0 12px}
+  .row{display:grid;gap:12px}
+  @media(min-width:980px){.row{grid-template-columns:1fr 1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}
+  label{display:block;font-size:12px;color:var(--muted);margin:6px 0 4px}
+  input,select,button,textarea{width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);background:#0f1524;color:var(--ink)}
+  button{cursor:pointer}
+  .btn{background:#162037;border-color:#2b3a5b}
+  .btn.primary{background:var(--brand);border-color:transparent;color:#03140d;font-weight:700}
+  .btn.danger{background:#4a1620;border-color:#6b1e27}
+  .bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .grid{width:100%;border-collapse:collapse;margin-top:10px}
+  .grid th,.grid td{border:1px solid var(--line);padding:8px;text-align:left}
+  .tight td{white-space:nowrap}
+  .right{text-align:right}
+  .pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;color:#06130e;background:#234e3a}
+  .link{cursor:pointer;color:#8bd4ff}
+  .muted{color:var(--muted)}
+  .status{display:inline-block;padding:4px 10px;border-radius:999px;font-weight:600}
+  .s-new{background:#15311f;color:#79d8a8}
+  .s-part{background:#2f270a;color:#f0d37a}
+  .s-done{background:#2b1315;color:#f5b1b6}
+  .k-new {border-color:#244e3b}
+  .k-part{border-color:#5b4a17;background:#221b08}
+  .k-done{border-color:#6b1e27;background:#201015}
+  .iconbtn{padding:6px 10px}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>🌾 SeedOrders2</h1>
+  <div class="bar" style="justify-content:space-between;margin-bottom:8px">
+    <div style="font-weight:800">🌱 SeedOrders — wspólna baza</div>
+    <div>Status: <span id="online" class="pill">offline</span></div>
+  </div>
 
-  <div class="card no-print">
-    <div class="toolbar">
-      <button onclick="showClients()">📋 Klienci</button>
-      <button onclick="showProducts()">🌱 Produkty</button>
-      <button onclick="showOrders()">📦 Zamówienia</button>
-      <button class="secondary" onclick="toggleTheme()" title="Przełącz motyw">🌙/☀️ Motyw</button>
+  <!-- CENNIK -->
+  <div class="card">
+    <div class="bar" style="justify-content:space-between">
+      <h2 style="margin:0">Cennik</h2>
+      <span class="link" id="toggle_prices">Ukryj</span>
+    </div>
+    <div id="prices_section">
+      <div class="bar">
+        <label><input type="checkbox" id="pf_rzepak" checked> Rzepak</label>
+        <label><input type="checkbox" id="pf_kuk" checked> Kukurydza</label>
+        <label><input type="checkbox" id="pf_zboza" checked> Zboża</label>
+        <label><input type="checkbox" id="pf_trawy" checked> Trawy</label>
+        <label><input type="checkbox" id="pf_inne" checked> Inne</label>
+        <button class="btn" id="p_refresh">Odśwież</button>
+      </div>
+      <div class="bar">
+        <select id="p_kat">
+          <option>Rzepak</option>
+          <option selected>Kukurydza</option>
+          <option>Zboża</option>
+          <option>Trawy</option>
+          <option>Inne</option>
+        </select>
+        <input id="p_odm" placeholder="Odmiana">
+        <input id="p_cena" type="number" step="0.01" placeholder="Cena">
+        <input id="p_dos" placeholder="Dostawca (opcjonalnie)">
+        <button class="btn primary" id="p_save">Zapisz</button>
+        <button class="btn" id="p_cancel" style="display:none">Anuluj edycję</button>
+      </div>
+      <table class="grid tight" id="price_tbl">
+        <thead><tr><th>Odmiana</th><th>Kategoria</th><th class="right">Cena</th><th>Dostawca</th><th>Akcje</th></tr></thead>
+        <tbody></tbody>
+      </table>
     </div>
   </div>
 
-  <div id="view"></div>
+  <!-- KONTRAHENCI -->
+  <div class="card" style="margin-top:12px">
+    <div class="bar" style="justify-content:space-between">
+      <h2 style="margin:0">Kontrahenci</h2>
+      <span class="link" id="toggle_clients">Ukryj</span>
+    </div>
+    <div id="clients_section">
+      <div class="bar">
+        <input id="c_name" placeholder="Nazwa">
+        <input id="c_phone" placeholder="Telefon">
+        <input id="c_addr" placeholder="Adres">
+        <button class="btn primary" id="c_save">Zapisz</button>
+        <button class="btn" id="c_cancel" style="display:none">Anuluj edycję</button>
+      </div>
+      <div class="bar" style="margin-top:6px">
+        <input id="c_filter" placeholder="Szukaj..."/>
+        <button class="btn" id="c_refresh">Odśwież listę</button>
+      </div>
+      <table class="grid tight" id="cli_tbl">
+        <thead><tr><th>Nazwa</th><th>Telefon</th><th>Adres</th><th>Akcje</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
 
-  <div class="card no-print">
-    <h3>Log systemowy</h3>
-    <pre id="log">Gotowe.</pre>
+  <!-- ZAMÓWIENIA -->
+  <div class="card" style="margin-top:12px">
+    <h2>Dodaj zamówienie</h2>
+    <div class="bar">
+      <select id="o_client"></select>
+      <input id="o_phone" placeholder="Telefon (auto)" disabled>
+      <input id="o_notes" placeholder="Uwagi (opcjonalnie)">
+      <button class="btn primary" id="o_add">Utwórz zamówienie</button>
+    </div>
+
+    <h3 style="margin-top:14px">Pozycja</h3>
+    <div class="bar">
+      <select id="i_kat">
+        <option>Rzepak</option><option selected>Kukurydza</option><option>Zboża</option><option>Trawy</option><option>Inne</option>
+      </select>
+      <input id="i_odm" placeholder="Odmiana">
+      <input id="i_cena" type="number" step="0.01" placeholder="Cena/szt">
+      <input id="i_dos" placeholder="Dostawca (opcjonalnie)">
+      <input id="i_qty" type="number" step="1" placeholder="Ilość">
+      <button class="btn" id="i_add">Dodaj pozycję</button>
+    </div>
+  </div>
+
+  <!-- LISTA ZAMÓWIEŃ -->
+  <div class="card" style="margin-top:12px">
+    <h2>Zamówienia (ostatnie)</h2>
+    <div class="bar">
+      <input id="o_search" placeholder="Szukaj: klient/odmiana/uwagi...">
+      <button class="btn" id="o_reload">Odśwież</button>
+    </div>
+    <div id="orders"></div>
+  </div>
+
+  <!-- RAPORTY -->
+  <div class="card" style="margin-top:12px">
+    <h2>Raporty i eksport</h2>
+    <div class="bar">
+      <label>Od <input type="date" id="r_from"></label>
+      <label>Do <input type="date" id="r_to"></label>
+      <label><input type="checkbox" id="rf_rzepak" checked> Rzepak</label>
+      <label><input type="checkbox" id="rf_kuk" checked> Kukurydza</label>
+      <label><input type="checkbox" id="rf_zboza" checked> Zboża</label>
+      <label><input type="checkbox" id="rf_trawy" checked> Trawy</label>
+      <label><input type="checkbox" id="rf_inne" checked> Inne</label>
+      <button class="btn" id="r_show">Pokaż zestawienie</button>
+      <button class="btn" id="r_export_sum">Pobierz CSV (sumy odmian)</button>
+      <button class="btn" id="r_export">Pobierz CSV: pozycje (szczegółowy)</button>
+    </div>
+
+    <h3 style="margin-top:10px">Zestawienie sum odmian (wszyscy klienci)</h3>
+    <table class="grid tight" id="sum_tbl">
+      <thead>
+        <tr>
+          <th>Kategoria</th>
+          <th>Odmiana</th>
+          <th class="right">Zamówiono</th>
+          <th class="right">Wydano (sprzedane)</th>
+          <th class="right">Pozostało</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+      <tfoot>
+        <tr>
+          <th colspan="2" class="right">RAZEM</th>
+          <th class="right" id="sum_ord">0</th>
+          <th class="right" id="sum_del">0</th>
+          <th class="right" id="sum_rem">0</th>
+        </tr>
+      </tfoot>
+    </table>
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-// === PODMIEŃ NA SWOJE (bez / na końcu, bez // na końcu klucza) ===
-const SUPABASE_URL = 'https://zseqkyjcqkuvrqxluihs.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzZXFreWpjcWt1dnJxeGx1aWhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzNDk2NjUsImV4cCI6MjA3NjkyNTY2NX0.ubbYQzYWiMyETohwKRnVQZaZRoIA-zwiX2YsY8TPsDk';
+/* ==== WSTAW SWOJE KLUCZE SUPABASE ==== */
+const SUPABASE_URL = "WSTAW_TUTAJ_SWÓJ_SUPABASE_URL";
+const SUPABASE_ANON_KEY = "WSTAW_TUTAJ_SWÓJ_ANON_KEY";
+/* ===================================== */
 
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const q = (s)=>document.querySelector(s);
+const onlineEl = q('#online');
 
-// motyw
-(function initTheme(){ if(localStorage.getItem('theme')==='light') document.documentElement.classList.add('light');})();
-function toggleTheme(){
-  document.documentElement.classList.toggle('light');
-  localStorage.setItem('theme', document.documentElement.classList.contains('light')?'light':'dark');
+async function ping(){
+  try{
+    const { error } = await sb.from('seedorders_orders').select('id',{count:'exact',head:true}).limit(1);
+    if(error) throw error;
+    onlineEl.textContent='online'; onlineEl.style.background='#1f4b36'; onlineEl.style.color='#8de5b9';
+  }catch(e){ onlineEl.textContent='offline'; }
+}
+ping();
+
+/* Helpers */
+function toPL(n){ return (n==null||isNaN(n))?'':Number(n).toFixed(2).replace('.',','); }
+function confirmBox(msg){ return window.confirm(msg); }
+function setToggle(linkId, sectionId){
+  const link=q(linkId), sec=q(sectionId);
+  const set=(show)=>{ sec.style.display=show?'':'none'; link.textContent=show?'Ukryj':'Pokaż'; };
+  link.onclick=()=>set(sec.style.display==='none');
+  set(true);
+}
+setToggle('#toggle_prices','#prices_section');
+setToggle('#toggle_clients','#clients_section');
+
+/* ===================== CENNIK ===================== */
+let editPriceId = null;
+
+function pickedPriceCats(){
+  const cats=[];
+  if(q('#pf_rzepak').checked) cats.push('Rzepak');
+  if(q('#pf_kuk').checked)    cats.push('Kukurydza');
+  if(q('#pf_zboza').checked)  cats.push('Zboża');
+  if(q('#pf_trawy').checked)  cats.push('Trawy');
+  if(q('#pf_inne').checked)   cats.push('Inne');
+  return cats;
 }
 
-const logOK = (t,d)=>document.getElementById('log').textContent='✅ '+t+'\n\n'+JSON.stringify(d,null,2);
-const logERR = (t,e)=>document.getElementById('log').textContent='❌ '+t+': '+(e?.message||e);
-const esc = s => (s??'').toString().replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-
-// =================== KLIENCI ===================
-async function showClients(){
-  const {data,error}=await sb.from('clients').select('*').order('created_at',{ascending:false});
-  if(error) return logERR('Klienci',error);
-  const rows=(data||[]).map(c=>`<tr>
-    <td>${esc(c.name)}</td><td>${esc(c.phone||'')}</td><td>${esc(c.email||'')}</td><td>${esc(c.address||'')}</td>
-    <td class="right">
-      <button onclick="editClient('${c.id}')">✏️</button>
-      <button class="danger" onclick="deleteClient('${c.id}')">🗑</button>
-    </td>
-  </tr>`).join('');
-  document.getElementById('view').innerHTML=`
-    <div class="card">
-      <h3>Klienci</h3>
-      <div class="toolbar">
-        <input id="c_name" placeholder="Nazwa" style="min-width:200px">
-        <input id="c_phone" placeholder="Telefon">
-        <input id="c_email" placeholder="Email">
-        <input id="c_address" placeholder="Adres" style="min-width:260px">
-        <button onclick="addClient()">➕ Dodaj klienta</button>
-      </div>
-      <table style="margin-top:8px">
-        <thead><tr><th>Nazwa</th><th>Tel</th><th>Email</th><th>Adres</th><th></th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
-    </div>`;
-  logOK('Załadowano klientów',{count:data?.length||0});
+async function loadPrices(){
+  let req = sb.from('seedorders_prices').select('*').order('odmiana',{ascending:true});
+  const cats = pickedPriceCats();
+  if(cats.length && cats.length<5) req = req.in('kategoria', cats);
+  const { data, error } = await req;
+  const tb = q('#price_tbl tbody'); tb.innerHTML='';
+  if(error) return alert(error.message);
+  data.forEach(r=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td>${r.odmiana}</td>
+      <td>${r.kategoria}</td>
+      <td class="right">${toPL(r.cena)}</td>
+      <td>${r.dostawca||''}</td>
+      <td>
+        <button class="btn iconbtn" onclick="editPrice('${r.id}','${encodeURIComponent(r.kategoria)}','${encodeURIComponent(r.odmiana)}','${r.cena}','${encodeURIComponent(r.dostawca||'')}')">✏️</button>
+        <button class="btn iconbtn danger" onclick="delPrice('${r.id}')">🗑️</button>
+      </td>`;
+    tb.appendChild(tr);
+  });
 }
-function _v(id){return document.getElementById(id).value.trim();}
-async function addClient(){
-  const name=_v('c_name'); if(!name) return alert('Podaj nazwę klienta.');
-  const {data,error}=await sb.from('clients').insert([{name,phone:_v('c_phone'),email:_v('c_email'),address:_v('c_address')}]).select();
-  if(error) return logERR('Dodawanie klienta',error); logOK('Dodano klienta',data); showClients();
+async function savePrice(){
+  const row = {
+    odmiana: q('#p_odm').value.trim(),
+    kategoria: q('#p_kat').value,
+    cena: Number(q('#p_cena').value||0),
+    dostawca: q('#p_dos').value.trim()||null
+  };
+  if(!row.odmiana || !row.kategoria || !row.cena){ alert('Uzupełnij: odmiana, kategoria, cena'); return; }
+  let resp;
+  if(editPriceId){ resp = await sb.from('seedorders_prices').update(row).eq('id', editPriceId); }
+  else{ resp = await sb.from('seedorders_prices').insert(row); }
+  if(resp.error){ alert('Błąd cennika: '+resp.error.message); return; }
+  cancelPriceEdit(); loadPrices();
 }
-async function editClient(id){
-  const {data}=await sb.from('clients').select('*').eq('id',id).single();
-  const n=prompt('Nazwa',data.name); const p=prompt('Telefon',data.phone); const e=prompt('Email',data.email); const a=prompt('Adres',data.address);
-  await sb.from('clients').update({name:n,phone:p,email:e,address:a}).eq('id',id); showClients();
+function editPrice(id, kat, odm, cena, dos){
+  editPriceId=id;
+  q('#p_kat').value=decodeURIComponent(kat);
+  q('#p_odm').value=decodeURIComponent(odm);
+  q('#p_cena').value=cena;
+  q('#p_dos').value=decodeURIComponent(dos);
+  q('#p_cancel').style.display='';
 }
-async function deleteClient(id){ if(confirm('Usunąć klienta?')){ await sb.from('clients').delete().eq('id',id); showClients(); } }
-
-// =================== PRODUKTY ===================
-async function showProducts(){
-  const {data,error}=await sb.from('products').select('*').order('created_at',{ascending:false});
-  if(error) return logERR('Produkty',error);
-  const rows=(data||[]).map(p=>`<tr>
-    <td>${esc(p.name)}</td><td>${esc(p.category||'')}</td><td class="right">${Number(p.price||0).toFixed(2)}</td>
-    <td class="right">${p.stock??0}</td><td>${esc(p.color||'')}</td>
-    <td class="right">
-      <button onclick="editProduct('${p.id}')">✏️</button>
-      <button class="danger" onclick="deleteProduct('${p.id}')">🗑</button>
-    </td>
-  </tr>`).join('');
-  document.getElementById('view').innerHTML=`
-    <div class="card">
-      <h3>Produkty</h3>
-      <div class="toolbar">
-        <input id="p_name" placeholder="Nazwa" style="min-width:200px">
-        <input id="p_category" placeholder="Kategoria">
-        <input id="p_price" type="number" step="0.01" min="0" placeholder="Cena">
-        <input id="p_stock" type="number" step="1" min="0" placeholder="Stan">
-        <input id="p_color" placeholder="Kolor">
-        <button onclick="addProduct()">➕ Dodaj produkt</button>
-      </div>
-      <table style="margin-top:8px">
-        <thead><tr><th>Nazwa</th><th>Kategoria</th><th class="right">Cena</th><th class="right">Stan</th><th>Kolor</th><th></th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
-    </div>`;
-  logOK('Załadowano produkty',{count:data?.length||0});
+function cancelPriceEdit(){
+  editPriceId=null;
+  q('#p_odm').value=''; q('#p_cena').value=''; q('#p_dos').value='';
+  q('#p_cancel').style.display='none';
 }
-async function addProduct(){
-  const name=_v('p_name'); if(!name) return alert('Podaj nazwę produktu.');
-  const price=Number((_v('p_price')||'0').replace(',','.')), stock=Number(_v('p_stock')||'0');
-  const {data,error}=await sb.from('products').insert([{
-    name, category:_v('p_category'), price, stock, color:_v('p_color')
-  }]).select();
-  if(error) return logERR('Dodawanie produktu',error); logOK('Dodano produkt',data); showProducts();
+async function delPrice(id){
+  if(!confirmBox('Usunąć pozycję cennika?')) return;
+  const { error } = await sb.from('seedorders_prices').delete().eq('id', id);
+  if(error) return alert(error.message);
+  loadPrices();
 }
-async function editProduct(id){
-  const {data}=await sb.from('products').select('*').eq('id',id).single();
-  const n=prompt('Nazwa',data.name); const k=prompt('Kategoria',data.category);
-  const c=parseFloat(prompt('Cena',data.price)); const s=parseInt(prompt('Stan',data.stock)); const col=prompt('Kolor',data.color);
-  await sb.from('products').update({name:n,category:k,price:c,stock:s,color:col}).eq('id',id); showProducts();
+q('#p_save').onclick=savePrice;
+q('#p_cancel').onclick=cancelPriceEdit;
+q('#p_refresh').onclick=loadPrices;
+['#pf_rzepak','#pf_kuk','#pf_zboza','#pf_trawy','#pf_inne'].forEach(s=>q(s).onchange=loadPrices);
+loadPrices();
+
+/* ===================== KLIENCI ===================== */
+let editClientId = null;
+
+async function loadClients(filter=''){
+  let req= sb.from('seedorders_clients').select('*').order('name',{ascending:true});
+  if(filter) req=req.ilike('name', `%${filter}%`);
+  const { data, error } = await req;
+  if(error) return alert(error.message);
+  const tb=q('#cli_tbl tbody'); tb.innerHTML='';
+  const sel=q('#o_client'); sel.innerHTML='';
+  (data||[]).forEach(r=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td>${r.name}</td><td>${r.phone||''}</td><td>${r.address||''}</td>
+      <td>
+        <button class="btn iconbtn" onclick="editClient('${r.id}','${encodeURIComponent(r.name)}','${encodeURIComponent(r.phone||'')}','${encodeURIComponent(r.address||'')}')">✏️</button>
+        <button class="btn iconbtn danger" onclick="delClient('${r.id}')">🗑️</button>
+      </td>`;
+    tb.appendChild(tr);
+    const opt=document.createElement('option');
+    opt.value=r.id; opt.textContent=`${r.name} • ${r.phone||''}`; opt.dataset.phone=r.phone||'';
+    sel.appendChild(opt);
+  });
+  updateClientPhone();
 }
-async function deleteProduct(id){ if(confirm('Usunąć produkt?')){ await sb.from('products').delete().eq('id',id); showProducts(); } }
-
-// ========== ZAMÓWIENIA + RAPORT / FILTRY / CSV / PDF ==========
-// --- koszyk/utworzenie zamówienia ---
-let cart=[]; // {product_id,name,unit_price,qty}
-const productsCache=new Map();
-
-function updateUnitInfo(){
-  const pid=document.getElementById('o_product')?.value;
-  const p=productsCache.get(pid);
-  const el=document.getElementById('unitInfo'); if(el) el.textContent=p?`cena: ${Number(p.price).toFixed(2)}`:'—';
+function updateClientPhone(){
+  const sel=q('#o_client'); const opt=sel.options[sel.selectedIndex];
+  q('#o_phone').value=opt? (opt.dataset.phone||'') : '';
 }
-function renderCartRows(){
-  return cart.map((l,idx)=>`
-    <tr>
-      <td>${esc(l.name)}</td>
-      <td class="right">${l.unit_price.toFixed(2)}</td>
-      <td class="right">${l.qty}</td>
-      <td class="right">${(l.qty*l.unit_price).toFixed(2)}</td>
-      <td class="right"><button class="danger" onclick="removeLine(${idx})">Usuń</button></td>
-    </tr>`).join('');
+async function saveClient(){
+  const row={ name:q('#c_name').value.trim(), phone:q('#c_phone').value.trim()||null, address:q('#c_addr').value.trim()||null };
+  if(!row.name){ alert('Podaj nazwę klienta'); return; }
+  let resp;
+  if(editClientId){ resp=await sb.from('seedorders_clients').update(row).eq('id', editClientId); }
+  else{ resp=await sb.from('seedorders_clients').insert(row); }
+  if(resp.error){ alert('Błąd klienta: '+resp.error.message); return; }
+  cancelClientEdit(); loadClients(q('#c_filter').value.trim());
 }
-function refreshCartUI(){
-  const tbody=document.querySelector('#cartTable tbody'); if(!tbody) return;
-  tbody.innerHTML=renderCartRows();
-  const total=cart.reduce((s,l)=>s+l.qty*l.unit_price,0);
-  const tEl=document.getElementById('cartTotal'); if(tEl) tEl.textContent=total.toFixed(2);
+function editClient(id, name, phone, addr){
+  editClientId=id;
+  q('#c_name').value=decodeURIComponent(name);
+  q('#c_phone').value=decodeURIComponent(phone);
+  q('#c_addr').value=decodeURIComponent(addr);
+  q('#c_cancel').style.display='';
 }
-function addLine(){
-  const pid=document.getElementById('o_product').value;
-  const qty=Number(document.getElementById('o_qty').value||'1');
-  if(!pid) return alert('Wybierz produkt.'); if(!qty||qty<1) return alert('Ilość musi być ≥ 1.');
-  const p=productsCache.get(pid);
-  cart.push({product_id:pid,name:p.name,unit_price:Number(p.price),qty});
-  refreshCartUI();
+function cancelClientEdit(){
+  editClientId=null;
+  q('#c_name').value=''; q('#c_phone').value=''; q('#c_addr').value='';
+  q('#c_cancel').style.display='none';
 }
-function removeLine(idx){ cart.splice(idx,1); refreshCartUI(); }
-function clearCart(){ cart.length=0; refreshCartUI(); }
-
-async function saveOrder(){
-  const client_id=document.getElementById('o_client').value;
-  if(!client_id) return alert('Wybierz klienta.');
-  if(cart.length===0) return alert('Koszyk jest pusty.');
-
-  const total=Number(cart.reduce((s,l)=>s+l.qty*l.unit_price,0).toFixed(2));
-  const {data:ord,error:e1}=await sb.from('orders')
-    .insert([{client_id,order_date:new Date().toISOString().slice(0,10),total_amount:total}])
-    .select('id');
-  if(e1) return logERR('Tworzenie zamówienia',e1);
-  const order_id=ord[0].id;
-
-  const lines=cart.map(l=>({order_id,product_id:l.product_id,quantity:l.qty,unit_price:l.unit_price,fulfilled_qty:0}));
-  const {error:e2}=await sb.from('order_items').insert(lines);
-  if(e2) return logERR('Dodawanie pozycji',e2);
-
-  logOK('Zamówienie zapisane',{order_id,pozycji:lines.length});
-  clearCart();
-  showOrders();
+async function delClient(id){
+  if(!confirmBox('Usunąć kontrahenta? (zamówienia pozostaną)')) return;
+  const { error } = await sb.from('seedorders_clients').delete().eq('id', id);
+  if(error) return alert(error.message);
+  loadClients(q('#c_filter').value.trim());
 }
+q('#c_save').onclick=saveClient;
+q('#c_cancel').onclick=cancelClientEdit;
+q('#c_refresh').onclick=()=>loadClients(q('#c_filter').value.trim());
+q('#o_client').onchange=updateClientPhone;
+loadClients();
 
-// --- raport/lista + edycja/odbiór/usuń ---
-let _ordersRaw=[]; let _ordersFiltered=[];
-function sClass(q,f){ f=f||0; if(f<=0) return 's-none'; if(f<q) return 's-part'; return 's-full'; }
-function sLbl(q,f){ f=f||0; if(f<=0) return 'Nieodebrane'; if(f<q) return `Częściowo (${f}/${q})`; return `Odebrane (${q})`; }
-
-async function showOrders(){
-  // 1) formularz – klienci i produkty
-  const [clients,products]=await Promise.all([
-    sb.from('clients').select('id,name').order('name'),
-    sb.from('products').select('id,name,price').order('name')
-  ]);
-  if(clients.error) return logERR('Klienci',clients.error);
-  if(products.error) return logERR('Produkty',products.error);
-
-  productsCache.clear();
-  (products.data||[]).forEach(p=>productsCache.set(p.id,{name:p.name,price:Number(p.price)}));
-
-  // 2) dane zamówień
-  const {data:orders,error:eOrd}=await sb.from('orders')
-    .select(`id,order_date,total_amount,clients(name),order_items(id,product_id,quantity,fulfilled_qty,unit_price,products(name))`)
-    .order('created_at',{ascending:false});
-  if(eOrd) return logERR('Zamówienia',eOrd);
-  _ordersRaw=orders||[]; _ordersFiltered=_ordersRaw.slice();
-
-  // 3) UI: formularz + raport/filtry + lista + podsumowanie "Do wydania"
-  document.getElementById('view').innerHTML=`
-    <div class="card">
-      <h3>🧾 Utwórz zamówienie</h3>
-      <div class="toolbar" style="gap:10px">
-        <label>Klient:</label>
-        <select id="o_client" style="min-width:260px">
-          <option value="">(wybierz)</option>
-          ${(clients.data||[]).map(c=>`<option value="${c.id}">${esc(c.name||c.id)}</option>`).join('')}
-        </select>
-        <label>Produkt:</label>
-        <select id="o_product" style="min-width:260px" onchange="updateUnitInfo()">
-          <option value="">(wybierz)</option>
-          ${(products.data||[]).map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}
-        </select>
-        <span id="unitInfo" class="status s-part" style="background:#444">—</span>
-        <input id="o_qty" type="number" min="1" value="1" style="width:120px">
-        <button onclick="addLine()">➕ Dodaj pozycję</button>
-      </div>
-      <table id="cartTable" style="margin-top:8px">
-        <thead><tr><th>Produkt</th><th class="right">Cena</th><th class="right">Ilość</th><th class="right">Suma</th><th class="right">Akcje</th></tr></thead>
-        <tbody></tbody>
-        <tfoot><tr><th colspan="3" class="right">Razem</th><th class="right" id="cartTotal">0.00</th><th class="right">
-          <button onclick="saveOrder()">💾 Zapisz zamówienie</button>
-          <button class="secondary" onclick="clearCart()">Wyczyść koszyk</button>
-        </th></tr></tfoot>
-      </table>
-    </div>
-
-    <div class="card no-print" id="filtersCard">
-      <h3>Raport odbiorów</h3>
-      <div class="toolbar">
-        <label>Filtr statusu:</label>
-        <select id="fltStatus" onchange="applyFilters()">
-          <option value="all">Wszystkie</option>
-          <option value="open">Tylko nieodebrane</option>
-          <option value="partial">Częściowe</option>
-          <option value="full">W pełni odebrane</option>
-        </select>
-        <label>Zakres dat:</label>
-        <input id="fltFrom" type="date" onchange="applyFilters()">
-        <input id="fltTo" type="date" onchange="applyFilters()">
-        <button onclick="exportCSV()">⬇️ Eksport CSV</button>
-        <button onclick="printPDF()">🖨️ Drukuj PDF</button>
-      </div>
-      <div class="summary" id="summaryBox"></div>
-    </div>
-
-    <div id="ordersList"></div>
-    <div class="card" id="remainingCard"></div>
-  `;
-  updateUnitInfo(); refreshCartUI();
-  renderOrdersUI();
-  logOK('Załadowano zamówienia',{count:_ordersRaw.length});
+/* ===================== ZAMÓWIENIA ===================== */
+async function createOrder(){
+  const sel=q('#o_client'); if(!sel.value){ alert('Wybierz klienta'); return; }
+  const { data:cli } = await sb.from('seedorders_clients').select('name,phone').eq('id', sel.value).single();
+  const row={ client_id:sel.value, client:cli?.name||null, phone:cli?.phone||null, notes:q('#o_notes').value.trim()||null };
+  const { error } = await sb.from('seedorders_orders').insert(row);
+  if(error) return alert('Błąd tworzenia zamówienia: '+error.message);
+  q('#o_notes').value=''; loadOrders();
 }
+q('#o_add').onclick=createOrder;
 
-function applyFilters(){
-  const status=document.getElementById('fltStatus').value;
-  const df=document.getElementById('fltFrom').value;
-  const dt=document.getElementById('fltTo').value;
+async function addItem(){
+  const sel=q('#o_client'); if(!sel.value){ alert('Najpierw utwórz nagłówek zamówienia'); return; }
+  const { data:order } = await sb.from('seedorders_orders').select('id').eq('client_id', sel.value).order('created_at',{ascending:false}).limit(1).single();
+  if(!order){ alert('Brak nagłówka – kliknij „Utwórz zamówienie”'); return; }
+  const row={
+    order_id:order.id,
+    kategoria:q('#i_kat').value,
+    odmiana:q('#i_odm').value.trim(),
+    cena:Number(q('#i_cena').value||0),
+    dostawca:q('#i_dos').value.trim()||null,
+    ilosc:Number(q('#i_qty').value||0)
+  };
+  if(!row.odmiana || !row.ilosc){ alert('Podaj odmianę i ilość'); return; }
+  const { error } = await sb.from('seedorders_items').insert(row);
+  if(error) return alert('Błąd pozycji: '+error.message);
+  q('#i_odm').value=''; q('#i_cena').value=''; q('#i_dos').value=''; q('#i_qty').value='';
+  loadOrders();
+}
+q('#i_add').onclick=addItem;
 
-  _ordersFiltered=_ordersRaw.filter(o=>{
-    if(df && o.order_date<df) return false;
-    if(dt && o.order_date>dt) return false;
-    const someOpen=o.order_items.some(i=>(i.fulfilled_qty||0)<i.quantity);
-    const somePart=o.order_items.some(i=>(i.fulfilled_qty||0)>0 && (i.fulfilled_qty||0)<i.quantity);
-    const allFull=o.order_items.length>0 && o.order_items.every(i=>(i.fulfilled_qty||0)===i.quantity);
-    if(status==='open') return someOpen;
-    if(status==='partial') return somePart;
-    if(status==='full') return allFull;
-    return true;
+function statusClass(rem, ord){ if(rem===0 && ord>0) return 'k-done'; if(rem>0 && rem<ord) return 'k-part'; return 'k-new'; }
+function statusBadge(rem, ord){ if(rem===0 && ord>0) return '<span class="status s-done">dostarczone</span>'; if(rem>0 && rem<ord) return '<span class="status s-part">częściowo</span>'; return '<span class="status s-new">zamówione</span>'; }
+
+async function loadOrders(){
+  const search=q('#o_search').value.trim().toLowerCase();
+  const { data:orders } = await sb.from('seedorders_orders').select('id,client,phone,notes,created_at').order('created_at',{ascending:false}).limit(200);
+  const container=q('#orders'); container.innerHTML='';
+
+  const ids = (orders||[]).map(o=>o.id);
+  let itemsByOrder={};
+  if(ids.length){
+    const { data:allItems } = await sb.from('seedorders_items')
+      .select('id,order_id,odmiana,kategoria,cena,ilosc,wydano,remaining_qty,ordered_qty,delivered_qty')
+      .in('order_id', ids).order('created_at',{ascending:true});
+    (allItems||[]).forEach(x=>{ (itemsByOrder[x.order_id] ||= []).push(x); });
+  }
+
+  orders.sort((a,b)=>{
+    const A=(itemsByOrder[a.id]||[]).reduce((s,x)=>s+Number(x.remaining_qty||0),0)===0?1:0;
+    const B=(itemsByOrder[b.id]||[]).reduce((s,x)=>s+Number(x.remaining_qty||0),0)===0?1:0;
+    return A-B || (new Date(b.created_at)-new Date(a.created_at));
   });
 
-  renderOrdersUI();
+  for(const o of (orders||[])){
+    const items=itemsByOrder[o.id]||[];
+    const ord=items.reduce((a,x)=>a+Number(x.ordered_qty??x.ilosc??0),0);
+    const rem=items.reduce((a,x)=>a+Number(x.remaining_qty ?? Math.max((x.ordered_qty??x.ilosc||0)-(x.delivered_qty??x.wydano||0),0)),0);
+    const klass=statusClass(rem,ord), badge=statusBadge(rem,ord);
+
+    const card=document.createElement('div'); card.className='card '+klass;
+    card.innerHTML=`
+      <div class="bar" style="justify-content:space-between">
+        <div><strong>${o.client||'—'}</strong> • ${o.phone||''}
+          &nbsp;<span class="pill">${new Date(o.created_at).toISOString().slice(0,10)}</span>
+          &nbsp; ${badge}
+        </div>
+        <div class="muted">${o.notes||''}</div>
+      </div>
+      <table class="grid"><thead><tr><th>Odmiana</th><th>Zamówiono</th><th>Wydano</th><th>Pozostało</th><th>Wydaj</th></tr></thead>
+      <tbody>${items.map(x=>{
+        const ordered=Number(x.ordered_qty??x.ilosc??0);
+        const delivered=Number(x.delivered_qty??x.wydano??0);
+        const left=Number(x.remaining_qty ?? Math.max(ordered-delivered,0));
+        return `<tr>
+          <td>${x.kategoria} • ${x.odmiana}</td>
+          <td>${ordered}</td>
+          <td>${delivered}</td>
+          <td>${left}</td>
+          <td><div class="bar">
+            <input type="number" step="1" min="0" value="1" id="give_${x.id}">
+            <button class="btn" onclick="give('${x.id}')">OK</button>
+          </div></td>
+        </tr>`;}).join('')}</tbody></table>`;
+    const text=(card.textContent||'').toLowerCase();
+    if(!search || text.includes(search)) container.appendChild(card);
+  }
+}
+q('#o_reload').onclick=loadOrders;
+q('#o_search').oninput=()=>loadOrders();
+loadOrders();
+
+window.give = async function(itemId){
+  const inp=q('#give_'+itemId); const qty=Number(inp.value||0); if(qty<=0) return;
+  const { data:item, error } = await sb.from('seedorders_items').select('delivered_qty,wydano').eq('id',itemId).single();
+  if(error) return alert(error.message);
+  const curr=Number(item.delivered_qty ?? item.wydano ?? 0);
+  const { error:errU } = await sb.from('seedorders_items').update({delivered_qty:curr+qty}).eq('id',itemId);
+  if(errU) return alert(errU.message);
+  loadOrders();
+};
+
+/* ===================== RAPORTY ===================== */
+function csvRow(arr){ return arr.map(v=>{ if(v==null) return ''; const s=String(v).replace(/"/g,'""'); return /[",;\n]/.test(s)?`"${s}"`:s; }).join(';'); }
+function download(name, text){ const blob=new Blob([text],{type:'text/csv;charset=utf-8;'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(url),500); }
+
+function pickedReportCats(){
+  const cats=[];
+  if(q('#rf_rzepak').checked) cats.push('Rzepak');
+  if(q('#rf_kuk').checked)    cats.push('Kukurydza');
+  if(q('#rf_zboza').checked)  cats.push('Zboża');
+  if(q('#rf_trawy').checked)  cats.push('Trawy');
+  if(q('#rf_inne').checked)   cats.push('Inne');
+  return cats;
 }
 
-function calcSummary(rows){
-  let totalQty=0,totalFul=0,pending=0;
-  rows.forEach(o=>{
-    (o.order_items||[]).forEach(i=>{
-      totalQty+=i.quantity;
-      totalFul+=(i.fulfilled_qty||0);
-      if((i.fulfilled_qty||0)<i.quantity) pending++;
-    });
+async function exportCSV(){ // szczegółowy (pozycje)
+  const from=q('#r_from').value||'1970-01-01';
+  const to=q('#r_to').value||'2999-12-31';
+  const cats=pickedReportCats();
+  const { data:orders } = await sb.from('seedorders_orders')
+    .select('id,client,phone,notes,created_at')
+    .gte('created_at',from).lte('created_at',to+'T23:59:59').order('created_at',{ascending:true});
+  const ids=(orders||[]).map(o=>o.id);
+  let items=[];
+  if(ids.length){
+    let req=sb.from('seedorders_items')
+      .select('order_id,kategoria,odmiana,cena,dostawca,ordered_qty,delivered_qty,remaining_qty,ilosc,wydano')
+      .in('order_id', ids);
+    if(cats.length && cats.length<5) req=req.in('kategoria', cats);
+    const { data:it } = await req;
+    items=it||[];
+  }
+  const lookup=Object.fromEntries((orders||[]).map(o=>[o.id,o]));
+  const header=['Data','Klient','Telefon','Kategoria','Odmiana','Zamówiono','Wydano','Pozostało','Cena','Dostawca','Uwagi'];
+  let rows=[csvRow(header)];
+  items.forEach(x=>{
+    const o=lookup[x.order_id];
+    const ord=Number(x.ordered_qty??x.ilosc??0);
+    const del=Number(x.delivered_qty??x.wydano??0);
+    const rem=Number(x.remaining_qty ?? Math.max(ord-del,0));
+    rows.push(csvRow([
+      new Date(o.created_at).toISOString().slice(0,10),
+      o.client||'', o.phone||'', x.kategoria||'', x.odmiana||'',
+      ord, del, rem, toPL(x.cena), x.dostawca||'', o.notes||''
+    ]));
   });
-  const percent=totalQty?(100*totalFul/totalQty):0;
-  return {totalQty,totalFulfilled:totalFul,pending,percent};
+  download(`raport_pozycje_${from}_${to}.csv`, rows.join('\n'));
 }
 
-// agregat "Do wydania" (product -> suma brakującej ilości)
-function calcRemaining(rows){
+async function loadSummary(){
+  const from=q('#r_from').value||'1970-01-01';
+  const to=q('#r_to').value||'2999-12-31';
+  const cats=pickedReportCats();
+
+  const { data:orders, error:eo } = await sb.from('seedorders_orders')
+    .select('id').gte('created_at',from).lte('created_at',to+'T23:59:59');
+  if(eo) return alert(eo.message);
+  const ids=(orders||[]).map(o=>o.id);
+  const tb=q('#sum_tbl tbody'); tb.innerHTML='';
+  if(!ids.length){ q('#sum_ord').textContent='0'; q('#sum_del').textContent='0'; q('#sum_rem').textContent='0'; return; }
+
+  let req=sb.from('seedorders_items')
+    .select('kategoria,odmiana,ordered_qty,delivered_qty,remaining_qty,ilosc,wydano')
+    .in('order_id', ids);
+  if(cats.length && cats.length<5) req=req.in('kategoria', cats);
+  const { data:items, error:ei } = await req;
+  if(ei) return alert(ei.message);
+
   const map=new Map();
-  rows.forEach(o=>{
-    (o.order_items||[]).forEach(i=>{
-      const rem=(i.quantity-(i.fulfilled_qty||0));
-      if(rem>0){
-        const key=i.products?.name||`#${i.product_id}`;
-        map.set(key,(map.get(key)||0)+rem);
-      }
-    });
+  for(const x of (items||[])){
+    const kat=x.kategoria||'—', odm=x.odmiana||'—';
+    const key=kat+'|'+odm;
+    const ord=Number(x.ordered_qty??x.ilosc??0);
+    const del=Number(x.delivered_qty??x.wydano??0);
+    const rem=Number(x.remaining_qty ?? Math.max(ord-del,0));
+    const agg=map.get(key)||{kategoria:kat,odmiana:odm,zam:0,wyd:0,poz:0};
+    agg.zam+=ord; agg.wyd+=del; agg.poz+=rem; map.set(key,agg);
+  }
+  const rows=Array.from(map.values()).sort((a,b)=> (a.kategoria||'').localeCompare(b.kategoria||'') || (a.odmiana||'').localeCompare(b.odmiana||''));
+  let sumOrd=0,sumDel=0,sumRem=0;
+  rows.forEach(r=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${r.kategoria}</td><td>${r.odmiana}</td><td class="right">${r.zam}</td><td class="right">${r.wyd}</td><td class="right">${r.poz}</td>`;
+    tb.appendChild(tr);
+    sumOrd+=r.zam; sumDel+=r.wyd; sumRem+=r.poz;
   });
-  // sort malejąco po ilości
-  return [...map.entries()].sort((a,b)=>b[1]-a[1]);
+  q('#sum_ord').textContent=sumOrd; q('#sum_del').textContent=sumDel; q('#sum_rem').textContent=sumRem;
 }
-
-function renderOrdersUI(){
-  const summary=calcSummary(_ordersFiltered);
-  const ordersHTML=_ordersFiltered.map(renderOrderBlock).join('')||'<div class="card"><p>Brak zamówień.</p></div>';
-
-  document.getElementById('summaryBox').innerHTML =
-    `<b>Łącznie odebrano:</b> ${summary.totalFulfilled} / ${summary.totalQty} (${summary.percent.toFixed(1)}%)<br>
-     <b>Pozycji nieodebranych:</b> ${summary.pending}`;
-
-  document.getElementById('ordersList').innerHTML = ordersHTML;
-
-  const remaining=calcRemaining(_ordersFiltered);
-  document.getElementById('remainingCard').innerHTML =
-    `<h3>📦 Do wydania (pozostało)</h3>
-     <small class="muted">Agregat z wyłączeniem już odebranych (częściowo i w całości).</small>
-     <table style="margin-top:8px">
-       <thead><tr><th>Produkt</th><th class="right">Suma brakująca</th></tr></thead>
-       <tbody>${remaining.map(([name,qty])=>`<tr><td>${esc(name)}</td><td class="right">${qty}</td></tr>`).join('')}</tbody>
-     </table>`;
-}
-
-function renderOrderBlock(o){
-  const items=(o.order_items||[]).map(i=>{
-    const f=i.fulfilled_qty||0;
-    const cls=sClass(i.quantity,f), lbl=sLbl(i.quantity,f);
-    return `<tr>
-      <td>${esc(i.products?.name||'')}</td>
-      <td class="right">${i.quantity}</td>
-      <td class="right">${f}</td>
-      <td class="right">${(i.unit_price||0).toFixed(2)}</td>
-      <td class="right"><span class="status ${cls}">${lbl}</span></td>
-      <td class="right no-print">
-        <button onclick="receiveQty('${i.id}', ${i.quantity}, ${f})">Odbierz</button>
-        <button class="warning" onclick="fulfillAll('${i.id}', ${i.quantity})">Odbierz wszystko</button>
-      </td>
-    </tr>`;
-  }).join('');
-  return `<div class="card">
-    <div style="display:flex;justify-content:space-between;gap:8px;align-items:center">
-      <div><b>${o.order_date||''}</b> | ${esc(o.clients?.name||'—')} | <b>Razem: ${o.total_amount??''}</b></div>
-      <div class="no-print">
-        <button class="secondary" onclick="editOrderDate('${o.id}','${o.order_date||''}')">Edytuj datę</button>
-        <button class="danger" onclick="deleteOrder('${o.id}')">Usuń zamówienie</button>
-      </div>
-    </div>
-    <table style="margin-top:6px">
-      <thead><tr><th>Produkt</th><th class="right">Ilość</th><th class="right">Odebrano</th><th class="right">Cena</th><th class="right">Status</th><th class="right no-print">Odbiór</th></tr></thead>
-      <tbody>${items}</tbody>
-    </table>
-  </div>`;
-}
-
-// odbiór częściowy
-async function receiveQty(itemId,qty,fulfilled){
-  const max = qty - (fulfilled||0);
-  if(max<=0) return alert('Ta pozycja jest już odebrana.');
-  const x = prompt(`Ile odebrać? (pozostało ${max})`, Math.min(1,max));
-  if(x==null) return;
-  let add = parseInt(x,10);
-  if(!(add>0)) return alert('Wpisz liczbę dodatnią.');
-  if(add>max) add=max;
-
-  const {data,error}=await sb.from('order_items').select('fulfilled_qty').eq('id',itemId).single();
-  if(error) return logERR('Pobieranie pozycji',error);
-  const newVal = (data.fulfilled_qty||0)+add;
-  await sb.from('order_items').update({fulfilled_qty:newVal}).eq('id',itemId);
-  applyFilters();
-}
-
-// odbiór pełny
-async function fulfillAll(itemId,qty){
-  await sb.from('order_items').update({fulfilled_qty:qty}).eq('id',itemId);
-  applyFilters();
-}
-
-// edycja daty zamówienia
-async function editOrderDate(orderId,current){
-  const d = prompt('Data zamówienia (YYYY-MM-DD):', current||new Date().toISOString().slice(0,10));
-  if(!d) return;
-  await sb.from('orders').update({order_date:d}).eq('id',orderId);
-  applyFilters();
-}
-
-// usunięcie całego zamówienia (wraz z pozycjami)
-async function deleteOrder(orderId){
-  if(!confirm('Usunąć całe zamówienie?')) return;
-  // jeśli masz FK ON DELETE CASCADE, wystarczy jedna linia poniżej:
-  await sb.from('orders').delete().eq('id',orderId);
-  // w przeciwnym razie (gdyby nie usuwało pozycji), odkomentuj najpierw:
-  // await sb.from('order_items').delete().eq('order_id',orderId);
-  // await sb.from('orders').delete().eq('id',orderId);
-  showOrders();
-}
-
-// === Export CSV (widok po filtrach) ===
-function exportCSV(){
-  const rows=[['order_id','order_date','client','product','quantity','fulfilled_qty','unit_price','status']];
-  _ordersFiltered.forEach(o=>{
-    (o.order_items||[]).forEach(i=>{
-      rows.push([o.id,o.order_date,(o.clients?.name||''),(i.products?.name||''),i.quantity,(i.fulfilled_qty||0),(i.unit_price||0),sLbl(i.quantity,i.fulfilled_qty||0)]);
-    });
+function exportSummaryCSV(){
+  const from=q('#r_from').value||'1970-01-01';
+  const to=q('#r_to').value||'2999-12-31';
+  const tb=q('#sum_tbl tbody');
+  const lines=[csvRow(['Kategoria','Odmiana','Zamówiono','Wydano','Pozostało'])];
+  Array.from(tb.querySelectorAll('tr')).forEach(tr=>{
+    const t=tr.querySelectorAll('td'); if(t.length===5) lines.push(csvRow([t[0].textContent,t[1].textContent,t[2].textContent,t[3].textContent,t[4].textContent]));
   });
-  const csv=rows.map(r=>r.map(v=>{const s=(v==null?'':String(v)); return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s}).join(',')).join('\n');
-  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
-  const url=URL.createObjectURL(blob); const a=document.createElement('a');
-  a.href=url; a.download=`seedorders2-raport-${new Date().toISOString().slice(0,10)}.csv`; document.body.appendChild(a); a.click();
-  document.body.removeChild(a); URL.revokeObjectURL(url);
+  lines.push(csvRow(['RAZEM','',q('#sum_ord').textContent,q('#sum_del').textContent,q('#sum_rem').textContent]));
+  download(`raport_sumy_odmian_${from}_${to}.csv`, lines.join('\n'));
 }
-// === Druk PDF przez okno drukowania ===
-function printPDF(){ window.print(); }
+q('#r_export').onclick=exportCSV;
+q('#r_export_sum').onclick=exportSummaryCSV;
+q('#r_show').onclick=loadSummary;
+['#rf_rzepak','#rf_kuk','#rf_zboza','#rf_trawy','#rf_inne'].forEach(s=>q(s).onchange=loadSummary);
 
-// start
-showOrders();
+// domyślnie – bieżący rok i od razu policz
+(function initReportDates(){
+  const now=new Date(), y=now.getFullYear();
+  q('#r_from').value=`${y}-01-01`; q('#r_to').value=`${y}-12-31`; loadSummary();
+})();
 </script>
 </body>
 </html>
