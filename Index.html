@@ -59,8 +59,8 @@ pre{background:#0b1220;color:#e6edf3;padding:12px;border-radius:10px;max-height:
 
 <script>
 // === PODMIEŃ NA SWOJE ===
-const SUPABASE_URL = 'https://YOUR_PROJECT.supabase.co';   // ← WSTAW SWÓJ URL
-const SUPABASE_ANON_KEY = 'YOUR_ANON_PUBLIC_KEY';          // ← WSTAW SWÓJ anon key
+const SUPABASE_URL = 'https://zseqkyjcqkuvrqxluihs.supabase.co'; 
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzZXFreWpjcWt1dnJxeGx1aWhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzNDk2NjUsImV4cCI6MjA3NjkyNTY2NX0.ubbYQzYWiMyETohwKRnVQZaZRoIA-zwiX2YsY8TPsDk';  
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const logOK = (t,d)=>document.getElementById('log').textContent='✅ '+t+'\n\n'+JSON.stringify(d,null,2);
@@ -298,3 +298,4 @@ showOrders();
 </script>
 </body>
 </html>
+
