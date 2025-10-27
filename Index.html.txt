@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8" />
+<title>SeedOrders2 – Raport odbiorów (pełna wersja)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<style>
+:root{--bg:#f9fafb;--card:#fff;--txt:#111;--muted:#6b7280;--line:#e5e7eb;--ok:#0a7a2a;--err:#b00020;--warn:#9a6b00}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--txt)}
+.wrap{max-width:1150px;margin:20px auto;padding:0 16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin:12px 0;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+h1{font-size:22px;margin:4px 0}
+button,input,select{padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:14px}
+button{cursor:pointer;background:#111;color:#fff}
+button.secondary{background:#fff;color:#111}
+button.danger{background:#b00020}
+button.warning{background:#9a6b00}
+.status{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;color:#fff}
+.s-none{background:var(--err)}
+.s-part{background:var(--warn)}
+.s-full{background:var(--ok)}
+table{width:100%;border-collapse:collapse}
+th,td{border-top:1px solid var(--line);padding:6px 10px;text-align:left;vertical-align:middle}
+th{background:#f3f4f6}
+.right{text-align:right}
+.summary{margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:8px;background:#f8fafc}
+pre{background:#0b1220;color:#e6edf3;padding:12px;border-radius:10px;max-height:55vh;overflow:auto}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.print-only{display:none}
+@media print{
+  body{background:#fff}
+  .no-print{display:none!important}
+  .print-only{display:block}
+  .card{border:none;box-shadow:none;margin:0;padding:0}
+  th{background:#eee}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🌾 SeedOrders2 – Raport odbiorów</h1>
+
+  <div class="card no-print">
+    <div class="toolbar">
+      <button onclick="showClients()">📋 Klienci</button>
+      <button onclick="showProducts()">🌱 Produkty</button>
+      <button onclick="showOrders()">📦 Zamówienia</button>
+    </div>
+  </div>
+
+  <div id="view"></div>
+
+  <div class="card no-print">
+    <h3>Log systemowy</h3>
+    <pre id="log">Gotowe.</pre>
+  </div>
+</div>
+
+<script>
+// === PODMIEŃ NA SWOJE ===
+const SUPABASE_URL = 'https://YOUR_PROJECT.supabase.co';   // ← WSTAW SWÓJ URL
+const SUPABASE_ANON_KEY = 'YOUR_ANON_PUBLIC_KEY';          // ← WSTAW SWÓJ anon key
+
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const logOK = (t,d)=>document.getElementById('log').textContent='✅ '+t+'\n\n'+JSON.stringify(d,null,2);
+const logERR = (t,e)=>document.getElementById('log').textContent='❌ '+t+': '+(e?.message||e);
+const esc = s => (s??'').toString().replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+
+// ===== KLIENCI =====
+async function showClients(){
+  const {data,error}=await sb.from('clients').select('*').order('created_at',{ascending:false});
+  if(error) return logERR('Klienci',error);
+  const rows=data.map(c=>`<tr>
+    <td>${esc(c.name)}</td><td>${esc(c.phone||'')}</td><td>${esc(c.email||'')}</td><td>${esc(c.address||'')}</td>
+    <td class="right"><button onclick="editClient('${c.id}')">✏️</button> <button class="danger" onclick="deleteClient('${c.id}')">🗑</button></td>
+  </tr>`).join('');
+  document.getElementById('view').innerHTML=`<div class="card">
+    <h3>Klienci</h3>
+    <div class="toolbar">
+      <input id="c_name" placeholder="Nazwa"><input id="c_phone" placeholder="Telefon">
+      <input id="c_email" placeholder="Email"><input id="c_address" placeholder="Adres" style="min-width:260px">
+      <button onclick="addClient()">➕ Dodaj klienta</button>
+    </div>
+    <table><thead><tr><th>Nazwa</th><th>Tel</th><th>Email</th><th>Adres</th><th></th></tr></thead><tbody>${rows}</tbody></table>
+  </div>`;
+  logOK('Załadowano klientów',{count:data.length});
+}
+async function addClient(){
+  const name=_v('c_name'), phone=_v('c_phone'), email=_v('c_email'), address=_v('c_address');
+  if(!name) return alert('Podaj nazwę klienta.');
+  const {data,error}=await sb.from('clients').insert([{name,phone,email,address}]).select();
+  if(error) return logERR('Dodawanie klienta',error);
+  logOK('Dodano klienta',data); showClients();
+}
+async function editClient(id){
+  const {data}=await sb.from('clients').select('*').eq('id',id).single();
+  const n=prompt('Nazwa',data.name);const p=prompt('Telefon',data.phone);const e=prompt('Email',data.email);const a=prompt('Adres',data.address);
+  await sb.from('clients').update({name:n,phone:p,email:e,address:a}).eq('id',id); showClients();
+}
+async function deleteClient(id){ if(confirm('Usunąć?')){ await sb.from('clients').delete().eq('id',id); showClients(); } }
+function _v(id){ return document.getElementById(id).value.trim(); }
+
+// ===== PRODUKTY =====
+async function showProducts(){
+  const {data,error}=await sb.from('products').select('*').order('created_at',{ascending:false});
+  if(error) return logERR('Produkty',error);
+  const rows=data.map(p=>`<tr>
+    <td>${esc(p.name)}</td><td>${esc(p.category||'')}</td><td>${Number(p.price).toFixed(2)}</td><td>${p.stock??0}</td><td>${esc(p.color||'')}</td>
+    <td class="right"><button onclick="editProduct('${p.id}')">✏️</button> <button class="danger" onclick="deleteProduct('${p.id}')">🗑</button></td>
+  </tr>`).join('');
+  document.getElementById('view').innerHTML=`<div class="card">
+    <h3>Produkty</h3>
+    <div class="toolbar">
+      <input id="p_name" placeholder="Nazwa" style="min-width:200px">
+      <input id="p_category" placeholder="Kategoria">
+      <input id="p_price" type="number" step="0.01" min="0" placeholder="Cena">
+      <input id="p_stock" type="number" step="1" min="0" placeholder="Stan">
+      <input id="p_color" placeholder="Kolor">
+      <button onclick="addProduct()">➕ Dodaj produkt</button>
+    </div>
+    <table><thead><tr><th>Nazwa</th><th>Kategoria</th><th>Cena</th><th>Stan</th><th>Kolor</th><th></th></tr></thead><tbody>${rows}</tbody></table>
+  </div>`;
+  logOK('Załadowano produkty',{count:data.length});
+}
+async function addProduct(){
+  const name=_v('p_name'), category=_v('p_category');
+  const price=Number((_v('p_price')||'0').replace(',','.')), stock=Number(_v('p_stock')||'0'), color=_v('p_color');
+  if(!name) return alert('Podaj nazwę produktu.');
+  const {data,error}=await sb.from('products').insert([{name,category,price,stock,color}]).select();
+  if(error) return logERR('Dodawanie produktu',error);
+  logOK('Dodano produkt',data); showProducts();
+}
+async function editProduct(id){
+  const {data}=await sb.from('products').select('*').eq('id',id).single();
+  const n=prompt('Nazwa',data.name); const k=prompt('Kategoria',data.category);
+  const c=parseFloat(prompt('Cena',data.price)); const s=parseInt(prompt('Stan',data.stock)); const col=prompt('Kolor',data.color);
+  await sb.from('products').update({name:n,category:k,price:c,stock:s,color:col}).eq('id',id); showProducts();
+}
+async function deleteProduct(id){ if(confirm('Usunąć produkt?')){ await sb.from('products').delete().eq('id',id); showProducts(); } }
+
+// ===== ZAMÓWIENIA + RAPORT / FILTRY / CSV / PDF =====
+let _ordersRaw = [];     // ostatnio pobrane zamówienia (bez filtrów)
+let _ordersFiltered = []; // po filtrach (widok)
+function sClass(q,f){ if(f<=0) return 's-none'; if(f<q) return 's-part'; return 's-full'; }
+function sLbl(q,f){ if(f<=0) return 'Nieodebrane'; if(f<q) return `Częściowo (${f}/${q})`; return `Odebrane (${q})`; }
+
+async function showOrders(){
+  const {data,error}=await sb.from('orders')
+    .select(`id,order_date,total_amount,clients(name),order_items(id,quantity,fulfilled_qty,unit_price,products(name))`)
+    .order('created_at',{ascending:false});
+  if(error) return logERR('Zamówienia',error);
+  _ordersRaw = data||[];
+  _ordersFiltered = _ordersRaw.slice();
+  renderOrdersUI();
+  logOK('Załadowano zamówienia',{count:_ordersRaw.length});
+}
+
+function renderOrdersUI(){
+  const summary = calcSummary(_ordersFiltered);
+  const ordersHTML = _ordersFiltered.map(renderOrderBlock).join('') || '<p>Brak zamówień.</p>';
+
+  document.getElementById('view').innerHTML = `
+  <div class="card no-print">
+    <h3>Raport odbiorów</h3>
+    <div class="toolbar">
+      <label>Filtr statusu:</label>
+      <select id="fltStatus" onchange="applyFilters()">
+        <option value="all">Wszystkie</option>
+        <option value="open">Tylko nieodebrane</option>
+        <option value="partial">Częściowe</option>
+        <option value="full">W pełni odebrane</option>
+      </select>
+      <label>Zakres dat:</label>
+      <input id="fltFrom" type="date" onchange="applyFilters()">
+      <input id="fltTo" type="date" onchange="applyFilters()">
+      <button onclick="exportCSV()">⬇️ Eksport CSV</button>
+      <button onclick="printPDF()">🖨️ Drukuj PDF</button>
+    </div>
+    <div class="summary">
+      <b>Łącznie odebrano:</b> ${summary.totalFulfilled} / ${summary.totalQty} (${summary.percent.toFixed(1)}%)<br>
+      <b>Pozycji nieodebranych:</b> ${summary.pending}<br>
+    </div>
+  </div>
+
+  <div class="card print-only">
+    <h3>Raport odbiorów – wydruk</h3>
+    <div><b>Łącznie:</b> ${summary.totalFulfilled} / ${summary.totalQty} (${summary.percent.toFixed(1)}%) • Nieodebranych: ${summary.pending}</div>
+  </div>
+
+  ${ordersHTML}
+  `;
+}
+
+function applyFilters(){
+  const status = document.getElementById('fltStatus').value;
+  const df = document.getElementById('fltFrom').value;
+  const dt = document.getElementById('fltTo').value;
+
+  _ordersFiltered = _ordersRaw.filter(o=>{
+    // data
+    if(df && o.order_date < df) return false;
+    if(dt && o.order_date > dt) return false;
+    // status
+    if(status==='all') return true;
+    const someOpen = o.order_items.some(i=>i.fulfilled_qty < i.quantity);
+    const somePart = o.order_items.some(i=>i.fulfilled_qty>0 && i.fulfilled_qty<i.quantity);
+    const allFull = o.order_items.length>0 && o.order_items.every(i=>i.fulfilled_qty===i.quantity);
+    if(status==='open') return someOpen;
+    if(status==='partial') return somePart;
+    if(status==='full') return allFull;
+    return true;
+  });
+
+  renderOrdersUI();
+}
+
+function calcSummary(rows){
+  let totalQty=0,totalFul=0,pending=0;
+  rows.forEach(o=>{
+    (o.order_items||[]).forEach(i=>{
+      totalQty+=i.quantity;
+      totalFul+=i.fulfilled_qty;
+      if(i.fulfilled_qty<i.quantity) pending++;
+    });
+  });
+  const percent=totalQty? (100*totalFul/totalQty):0;
+  return {totalQty,totalFulfilled:totalFul,pending,percent};
+}
+
+function renderOrderBlock(o){
+  const items=(o.order_items||[]).map(i=>{
+    const cls=sClass(i.quantity,i.fulfilled_qty||0), lbl=sLbl(i.quantity,i.fulfilled_qty||0);
+    return `<tr>
+      <td>${esc(i.products?.name||'')}</td>
+      <td class="right">${i.quantity}</td>
+      <td class="right">${i.fulfilled_qty}</td>
+      <td class="right">${i.unit_price.toFixed(2)}</td>
+      <td class="right"><span class="status ${cls}">${lbl}</span></td>
+      <td class="right no-print">
+        <button onclick="adjFulfilled('${i.id}',-1)">-1</button>
+        <button onclick="adjFulfilled('${i.id}',1)">+1</button>
+        <button class="warning" onclick="fulfillAll('${i.id}',${i.quantity})">Odbierz wszystko</button>
+      </td>
+    </tr>`;
+  }).join('');
+  return `<div class="card">
+    <div><b>${o.order_date||''}</b> | ${esc(o.clients?.name||'—')} | <b>Razem: ${o.total_amount??''}</b></div>
+    <table style="margin-top:6px">
+      <thead><tr><th>Produkt</th><th class="right">Ilość</th><th class="right">Odebrano</th><th class="right">Cena</th><th class="right">Status</th><th class="right no-print">Odbiór</th></tr></thead>
+      <tbody>${items}</tbody>
+    </table>
+  </div>`;
+}
+
+async function adjFulfilled(itemId,delta){
+  const {data,error}=await sb.from('order_items').select('quantity,fulfilled_qty').eq('id',itemId).single();
+  if(error) return logERR('Pobieranie pozycji',error);
+  let n=data.fulfilled_qty+delta; if(n<0)n=0; if(n>data.quantity)n=data.quantity;
+  await sb.from('order_items').update({fulfilled_qty:n}).eq('id',itemId);
+  applyFilters(); // odśwież w miejscu
+}
+async function fulfillAll(itemId,qty){
+  await sb.from('order_items').update({fulfilled_qty:qty}).eq('id',itemId);
+  applyFilters();
+}
+
+// === Eksport CSV (aktualnie widoczne zamówienia) ===
+function exportCSV(){
+  const rows = [];
+  rows.push(['order_id','order_date','client','product','quantity','fulfilled_qty','unit_price','status']);
+  _ordersFiltered.forEach(o=>{
+    (o.order_items||[]).forEach(i=>{
+      const status = sLbl(i.quantity,i.fulfilled_qty||0);
+      rows.push([o.id,o.order_date,(o.clients?.name||''),(i.products?.name||''),i.quantity,i.fulfilled_qty,(i.unit_price||0),status]);
+    });
+  });
+  const csv = rows.map(r=>r.map(escapeCSV).join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `seedorders2-raport-${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+function escapeCSV(v){
+  const s = (v==null?'':String(v));
+  if(/[",\n]/.test(s)) return `"${s.replace(/"/g,'""')}"`;
+  return s;
+}
+
+// === Druk do PDF (używa okna wydruku przeglądarki) ===
+function printPDF(){
+  window.print(); // używa stylów @media print powyżej
+}
+
+// start
+showOrders();
+</script>
+</body>
+</html>
