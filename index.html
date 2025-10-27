@@ -2,15 +2,17 @@
 <html lang="pl">
 <head>
 <meta charset="UTF-8" />
-<title>SeedOrders2 – Raport odbiorów (pełna wersja)</title>
+<title>SeedOrders2 – Zamówienia & Raport odbiorów</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <style>
 :root{--bg:#f9fafb;--card:#fff;--txt:#111;--muted:#6b7280;--line:#e5e7eb;--ok:#0a7a2a;--err:#b00020;--warn:#9a6b00}
+*{box-sizing:border-box}
 body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--txt)}
-.wrap{max-width:1150px;margin:20px auto;padding:0 16px}
+.wrap{max-width:1150px;margin:22px auto;padding:0 16px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin:12px 0;box-shadow:0 1px 3px rgba(0,0,0,.05)}
-h1{font-size:22px;margin:4px 0}
+h1{font-size:22px;margin:0 0 8px}
+h3{margin:0 0 10px}
 button,input,select{padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:14px}
 button{cursor:pointer;background:#111;color:#fff}
 button.secondary{background:#fff;color:#111}
@@ -24,22 +26,22 @@ table{width:100%;border-collapse:collapse}
 th,td{border-top:1px solid var(--line);padding:6px 10px;text-align:left;vertical-align:middle}
 th{background:#f3f4f6}
 .right{text-align:right}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .summary{margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:8px;background:#f8fafc}
 pre{background:#0b1220;color:#e6edf3;padding:12px;border-radius:10px;max-height:55vh;overflow:auto}
-.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .print-only{display:none}
 @media print{
-  body{background:#fff}
   .no-print{display:none!important}
   .print-only{display:block}
   .card{border:none;box-shadow:none;margin:0;padding:0}
+  body{background:#fff}
   th{background:#eee}
 }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>🌾 SeedOrders2 – Raport odbiorów</h1>
+  <h1>🌾 SeedOrders2</h1>
 
   <div class="card no-print">
     <div class="toolbar">
@@ -58,78 +60,93 @@ pre{background:#0b1220;color:#e6edf3;padding:12px;border-radius:10px;max-height:
 </div>
 
 <script>
-// === PODMIEŃ NA SWOJE ===
-const SUPABASE_URL = 'https://zseqkyjcqkuvrqxluihs.supabase.co'; 
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzZXFreWpjcWt1dnJxeGx1aWhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzNDk2NjUsImV4cCI6MjA3NjkyNTY2NX0.ubbYQzYWiMyETohwKRnVQZaZRoIA-zwiX2YsY8TPsDk';  
+// === PODMIEŃ NA SWOJE (bez / na końcu, bez // na końcu klucza) ===
+const SUPABASE_URL = 'https://zseqkyjcqkuvrqxluihs.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzZXFreWpjcWt1dnJxeGx1aWhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzNDk2NjUsImV4cCI6MjA3NjkyNTY2NX0.ubbYQzYWiMyETohwKRnVQZaZRoIA-zwiX2YsY8TPsDk';
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const logOK = (t,d)=>document.getElementById('log').textContent='✅ '+t+'\n\n'+JSON.stringify(d,null,2);
 const logERR = (t,e)=>document.getElementById('log').textContent='❌ '+t+': '+(e?.message||e);
 const esc = s => (s??'').toString().replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 
-// ===== KLIENCI =====
+// =================== KLIENCI ===================
 async function showClients(){
   const {data,error}=await sb.from('clients').select('*').order('created_at',{ascending:false});
   if(error) return logERR('Klienci',error);
-  const rows=data.map(c=>`<tr>
+  const rows=(data||[]).map(c=>`<tr>
     <td>${esc(c.name)}</td><td>${esc(c.phone||'')}</td><td>${esc(c.email||'')}</td><td>${esc(c.address||'')}</td>
-    <td class="right"><button onclick="editClient('${c.id}')">✏️</button> <button class="danger" onclick="deleteClient('${c.id}')">🗑</button></td>
+    <td class="right">
+      <button onclick="editClient('${c.id}')">✏️</button>
+      <button class="danger" onclick="deleteClient('${c.id}')">🗑</button>
+    </td>
   </tr>`).join('');
-  document.getElementById('view').innerHTML=`<div class="card">
-    <h3>Klienci</h3>
-    <div class="toolbar">
-      <input id="c_name" placeholder="Nazwa"><input id="c_phone" placeholder="Telefon">
-      <input id="c_email" placeholder="Email"><input id="c_address" placeholder="Adres" style="min-width:260px">
-      <button onclick="addClient()">➕ Dodaj klienta</button>
-    </div>
-    <table><thead><tr><th>Nazwa</th><th>Tel</th><th>Email</th><th>Adres</th><th></th></tr></thead><tbody>${rows}</tbody></table>
-  </div>`;
-  logOK('Załadowano klientów',{count:data.length});
+  document.getElementById('view').innerHTML=`
+    <div class="card">
+      <h3>Klienci</h3>
+      <div class="toolbar">
+        <input id="c_name" placeholder="Nazwa" style="min-width:200px">
+        <input id="c_phone" placeholder="Telefon">
+        <input id="c_email" placeholder="Email">
+        <input id="c_address" placeholder="Adres" style="min-width:260px">
+        <button onclick="addClient()">➕ Dodaj klienta</button>
+      </div>
+      <table style="margin-top:8px">
+        <thead><tr><th>Nazwa</th><th>Tel</th><th>Email</th><th>Adres</th><th></th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+  logOK('Załadowano klientów',{count:data?.length||0});
 }
+function _v(id){return document.getElementById(id).value.trim();}
 async function addClient(){
-  const name=_v('c_name'), phone=_v('c_phone'), email=_v('c_email'), address=_v('c_address');
-  if(!name) return alert('Podaj nazwę klienta.');
-  const {data,error}=await sb.from('clients').insert([{name,phone,email,address}]).select();
-  if(error) return logERR('Dodawanie klienta',error);
-  logOK('Dodano klienta',data); showClients();
+  const name=_v('c_name'); if(!name) return alert('Podaj nazwę klienta.');
+  const {data,error}=await sb.from('clients').insert([{name,phone:_v('c_phone'),email:_v('c_email'),address:_v('c_address')}]).select();
+  if(error) return logERR('Dodawanie klienta',error); logOK('Dodano klienta',data); showClients();
 }
 async function editClient(id){
   const {data}=await sb.from('clients').select('*').eq('id',id).single();
-  const n=prompt('Nazwa',data.name);const p=prompt('Telefon',data.phone);const e=prompt('Email',data.email);const a=prompt('Adres',data.address);
+  const n=prompt('Nazwa',data.name); const p=prompt('Telefon',data.phone); const e=prompt('Email',data.email); const a=prompt('Adres',data.address);
   await sb.from('clients').update({name:n,phone:p,email:e,address:a}).eq('id',id); showClients();
 }
-async function deleteClient(id){ if(confirm('Usunąć?')){ await sb.from('clients').delete().eq('id',id); showClients(); } }
-function _v(id){ return document.getElementById(id).value.trim(); }
+async function deleteClient(id){ if(confirm('Usunąć klienta?')){ await sb.from('clients').delete().eq('id',id); showClients(); } }
 
-// ===== PRODUKTY =====
+// =================== PRODUKTY ===================
 async function showProducts(){
   const {data,error}=await sb.from('products').select('*').order('created_at',{ascending:false});
   if(error) return logERR('Produkty',error);
-  const rows=data.map(p=>`<tr>
-    <td>${esc(p.name)}</td><td>${esc(p.category||'')}</td><td>${Number(p.price).toFixed(2)}</td><td>${p.stock??0}</td><td>${esc(p.color||'')}</td>
-    <td class="right"><button onclick="editProduct('${p.id}')">✏️</button> <button class="danger" onclick="deleteProduct('${p.id}')">🗑</button></td>
+  const rows=(data||[]).map(p=>`<tr>
+    <td>${esc(p.name)}</td><td>${esc(p.category||'')}</td><td class="right">${Number(p.price||0).toFixed(2)}</td>
+    <td class="right">${p.stock??0}</td><td>${esc(p.color||'')}</td>
+    <td class="right">
+      <button onclick="editProduct('${p.id}')">✏️</button>
+      <button class="danger" onclick="deleteProduct('${p.id}')">🗑</button>
+    </td>
   </tr>`).join('');
-  document.getElementById('view').innerHTML=`<div class="card">
-    <h3>Produkty</h3>
-    <div class="toolbar">
-      <input id="p_name" placeholder="Nazwa" style="min-width:200px">
-      <input id="p_category" placeholder="Kategoria">
-      <input id="p_price" type="number" step="0.01" min="0" placeholder="Cena">
-      <input id="p_stock" type="number" step="1" min="0" placeholder="Stan">
-      <input id="p_color" placeholder="Kolor">
-      <button onclick="addProduct()">➕ Dodaj produkt</button>
-    </div>
-    <table><thead><tr><th>Nazwa</th><th>Kategoria</th><th>Cena</th><th>Stan</th><th>Kolor</th><th></th></tr></thead><tbody>${rows}</tbody></table>
-  </div>`;
-  logOK('Załadowano produkty',{count:data.length});
+  document.getElementById('view').innerHTML=`
+    <div class="card">
+      <h3>Produkty</h3>
+      <div class="toolbar">
+        <input id="p_name" placeholder="Nazwa" style="min-width:200px">
+        <input id="p_category" placeholder="Kategoria">
+        <input id="p_price" type="number" step="0.01" min="0" placeholder="Cena">
+        <input id="p_stock" type="number" step="1" min="0" placeholder="Stan">
+        <input id="p_color" placeholder="Kolor">
+        <button onclick="addProduct()">➕ Dodaj produkt</button>
+      </div>
+      <table style="margin-top:8px">
+        <thead><tr><th>Nazwa</th><th>Kategoria</th><th class="right">Cena</th><th class="right">Stan</th><th>Kolor</th><th></th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+  logOK('Załadowano produkty',{count:data?.length||0});
 }
 async function addProduct(){
-  const name=_v('p_name'), category=_v('p_category');
-  const price=Number((_v('p_price')||'0').replace(',','.')), stock=Number(_v('p_stock')||'0'), color=_v('p_color');
-  if(!name) return alert('Podaj nazwę produktu.');
-  const {data,error}=await sb.from('products').insert([{name,category,price,stock,color}]).select();
-  if(error) return logERR('Dodawanie produktu',error);
-  logOK('Dodano produkt',data); showProducts();
+  const name=_v('p_name'); if(!name) return alert('Podaj nazwę produktu.');
+  const price=Number((_v('p_price')||'0').replace(',','.')), stock=Number(_v('p_stock')||'0');
+  const {data,error}=await sb.from('products').insert([{
+    name, category:_v('p_category'), price, stock, color:_v('p_color')
+  }]).select();
+  if(error) return logERR('Dodawanie produktu',error); logOK('Dodano produkt',data); showProducts();
 }
 async function editProduct(id){
   const {data}=await sb.from('products').select('*').eq('id',id).single();
@@ -139,73 +156,135 @@ async function editProduct(id){
 }
 async function deleteProduct(id){ if(confirm('Usunąć produkt?')){ await sb.from('products').delete().eq('id',id); showProducts(); } }
 
-// ===== ZAMÓWIENIA + RAPORT / FILTRY / CSV / PDF =====
-let _ordersRaw = [];     // ostatnio pobrane zamówienia (bez filtrów)
-let _ordersFiltered = []; // po filtrach (widok)
-function sClass(q,f){ if(f<=0) return 's-none'; if(f<q) return 's-part'; return 's-full'; }
-function sLbl(q,f){ if(f<=0) return 'Nieodebrane'; if(f<q) return `Częściowo (${f}/${q})`; return `Odebrane (${q})`; }
+// ========== ZAMÓWIENIA + RAPORT / FILTRY / CSV / PDF ==========
+// --- koszyk/utworzenie zamówienia ---
+let cart=[]; // {product_id,name,unit_price,qty}
+const productsCache=new Map();
+
+function updateUnitInfo(){
+  const pid=document.getElementById('o_product')?.value;
+  const p=productsCache.get(pid);
+  const el=document.getElementById('unitInfo'); if(el) el.textContent=p?`cena: ${Number(p.price).toFixed(2)}`:'—';
+}
+function renderCartRows(){
+  return cart.map((l,idx)=>`
+    <tr>
+      <td>${esc(l.name)}</td>
+      <td class="right">${l.unit_price.toFixed(2)}</td>
+      <td class="right">${l.qty}</td>
+      <td class="right">${(l.qty*l.unit_price).toFixed(2)}</td>
+      <td class="right"><button class="danger" onclick="removeLine(${idx})">Usuń</button></td>
+    </tr>`).join('');
+}
+function refreshCartUI(){
+  const tbody=document.querySelector('#cartTable tbody'); if(!tbody) return;
+  tbody.innerHTML=renderCartRows();
+  const total=cart.reduce((s,l)=>s+l.qty*l.unit_price,0);
+  const tEl=document.getElementById('cartTotal'); if(tEl) tEl.textContent=total.toFixed(2);
+}
+function addLine(){
+  const pid=document.getElementById('o_product').value;
+  const qty=Number(document.getElementById('o_qty').value||'1');
+  if(!pid) return alert('Wybierz produkt.'); if(!qty||qty<1) return alert('Ilość musi być ≥ 1.');
+  const p=productsCache.get(pid);
+  cart.push({product_id:pid,name:p.name,unit_price:Number(p.price),qty});
+  refreshCartUI();
+}
+function removeLine(idx){ cart.splice(idx,1); refreshCartUI(); }
+function clearCart(){ cart.length=0; refreshCartUI(); }
+
+async function saveOrder(){
+  const client_id=document.getElementById('o_client').value;
+  if(!client_id) return alert('Wybierz klienta.');
+  if(cart.length===0) return alert('Koszyk jest pusty.');
+
+  const total=Number(cart.reduce((s,l)=>s+l.qty*l.unit_price,0).toFixed(2));
+  const {data:ord,error:e1}=await sb.from('orders')
+    .insert([{client_id,order_date:new Date().toISOString().slice(0,10),total_amount:total}])
+    .select('id');
+  if(e1) return logERR('Tworzenie zamówienia',e1);
+  const order_id=ord[0].id;
+
+  const lines=cart.map(l=>({order_id,product_id:l.product_id,quantity:l.qty,unit_price:l.unit_price,fulfilled_qty:0}));
+  const {error:e2}=await sb.from('order_items').insert(lines);
+  if(e2) return logERR('Dodawanie pozycji',e2);
+
+  logOK('Zamówienie zapisane',{order_id,pozycji:lines.length});
+  clearCart();
+  showOrders();
+}
+
+// --- raport/lista ---
+let _ordersRaw=[]; let _ordersFiltered=[];
+function sClass(q,f){ if((f||0)<=0) return 's-none'; if((f||0)<q) return 's-part'; return 's-full'; }
+function sLbl(q,f){ if((f||0)<=0) return 'Nieodebrane'; if((f||0)<q) return `Częściowo (${f}/${q})`; return `Odebrane (${q})`; }
 
 async function showOrders(){
-  const {data,error}=await sb.from('orders')
+  // 1) formularz – klienci i produkty
+  const [clients,products]=await Promise.all([
+    sb.from('clients').select('id,name').order('name'),
+    sb.from('products').select('id,name,price').order('name')
+  ]);
+  if(clients.error) return logERR('Klienci',clients.error);
+  if(products.error) return logERR('Produkty',products.error);
+
+  productsCache.clear();
+  (products.data||[]).forEach(p=>productsCache.set(p.id,{name:p.name,price:Number(p.price)}));
+
+  // 2) dane zamówień
+  const {data:errorData,error:eOrd}=await sb.from('orders')
     .select(`id,order_date,total_amount,clients(name),order_items(id,quantity,fulfilled_qty,unit_price,products(name))`)
     .order('created_at',{ascending:false});
-  if(error) return logERR('Zamówienia',error);
-  _ordersRaw = data||[];
-  _ordersFiltered = _ordersRaw.slice();
+  if(eOrd) return logERR('Zamówienia',eOrd);
+  _ordersRaw=errorData||[]; _ordersFiltered=_ordersRaw.slice();
+
+  // 3) UI: formularz + raport/filtry + lista
+  document.getElementById('view').innerHTML=`
+    <div class="card">
+      <h3>🧾 Utwórz zamówienie</h3>
+      <div class="toolbar" style="gap:10px">
+        <label>Klient:</label>
+        <select id="o_client" style="min-width:260px">
+          <option value="">(wybierz)</option>
+          ${(clients.data||[]).map(c=>`<option value="${c.id}">${esc(c.name||c.id)}</option>`).join('')}
+        </select>
+        <label>Produkt:</label>
+        <select id="o_product" style="min-width:260px" onchange="updateUnitInfo()">
+          <option value="">(wybierz)</option>
+          ${(products.data||[]).map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}
+        </select>
+        <span id="unitInfo" class="status s-part" style="background:#444">—</span>
+        <input id="o_qty" type="number" min="1" value="1" style="width:120px">
+        <button onclick="addLine()">➕ Dodaj pozycję</button>
+      </div>
+      <table id="cartTable" style="margin-top:8px">
+        <thead><tr><th>Produkt</th><th class="right">Cena</th><th class="right">Ilość</th><th class="right">Suma</th><th class="right">Akcje</th></tr></thead>
+        <tbody></tbody>
+        <tfoot><tr><th colspan="3" class="right">Razem</th><th class="right" id="cartTotal">0.00</th><th class="right">
+          <button onclick="saveOrder()">💾 Zapisz zamówienie</button>
+          <button class="secondary" onclick="clearCart()">Wyczyść koszyk</button>
+        </th></tr></tfoot>
+      </table>
+    </div>
+
+    <div id="reportArea"></div>
+  `;
+  updateUnitInfo(); refreshCartUI();
   renderOrdersUI();
   logOK('Załadowano zamówienia',{count:_ordersRaw.length});
 }
 
-function renderOrdersUI(){
-  const summary = calcSummary(_ordersFiltered);
-  const ordersHTML = _ordersFiltered.map(renderOrderBlock).join('') || '<p>Brak zamówień.</p>';
-
-  document.getElementById('view').innerHTML = `
-  <div class="card no-print">
-    <h3>Raport odbiorów</h3>
-    <div class="toolbar">
-      <label>Filtr statusu:</label>
-      <select id="fltStatus" onchange="applyFilters()">
-        <option value="all">Wszystkie</option>
-        <option value="open">Tylko nieodebrane</option>
-        <option value="partial">Częściowe</option>
-        <option value="full">W pełni odebrane</option>
-      </select>
-      <label>Zakres dat:</label>
-      <input id="fltFrom" type="date" onchange="applyFilters()">
-      <input id="fltTo" type="date" onchange="applyFilters()">
-      <button onclick="exportCSV()">⬇️ Eksport CSV</button>
-      <button onclick="printPDF()">🖨️ Drukuj PDF</button>
-    </div>
-    <div class="summary">
-      <b>Łącznie odebrano:</b> ${summary.totalFulfilled} / ${summary.totalQty} (${summary.percent.toFixed(1)}%)<br>
-      <b>Pozycji nieodebranych:</b> ${summary.pending}<br>
-    </div>
-  </div>
-
-  <div class="card print-only">
-    <h3>Raport odbiorów – wydruk</h3>
-    <div><b>Łącznie:</b> ${summary.totalFulfilled} / ${summary.totalQty} (${summary.percent.toFixed(1)}%) • Nieodebranych: ${summary.pending}</div>
-  </div>
-
-  ${ordersHTML}
-  `;
-}
-
 function applyFilters(){
-  const status = document.getElementById('fltStatus').value;
-  const df = document.getElementById('fltFrom').value;
-  const dt = document.getElementById('fltTo').value;
+  const status=document.getElementById('fltStatus').value;
+  const df=document.getElementById('fltFrom').value;
+  const dt=document.getElementById('fltTo').value;
 
-  _ordersFiltered = _ordersRaw.filter(o=>{
-    // data
-    if(df && o.order_date < df) return false;
-    if(dt && o.order_date > dt) return false;
-    // status
-    if(status==='all') return true;
-    const someOpen = o.order_items.some(i=>i.fulfilled_qty < i.quantity);
-    const somePart = o.order_items.some(i=>i.fulfilled_qty>0 && i.fulfilled_qty<i.quantity);
-    const allFull = o.order_items.length>0 && o.order_items.every(i=>i.fulfilled_qty===i.quantity);
+  _ordersFiltered=_ordersRaw.filter(o=>{
+    if(df && o.order_date<df) return false;
+    if(dt && o.order_date>dt) return false;
+    const someOpen=o.order_items.some(i=>(i.fulfilled_qty||0)<i.quantity);
+    const somePart=o.order_items.some(i=>(i.fulfilled_qty||0)>0 && (i.fulfilled_qty||0)<i.quantity);
+    const allFull=o.order_items.length>0 && o.order_items.every(i=>(i.fulfilled_qty||0)===i.quantity);
     if(status==='open') return someOpen;
     if(status==='partial') return somePart;
     if(status==='full') return allFull;
@@ -220,12 +299,47 @@ function calcSummary(rows){
   rows.forEach(o=>{
     (o.order_items||[]).forEach(i=>{
       totalQty+=i.quantity;
-      totalFul+=i.fulfilled_qty;
-      if(i.fulfilled_qty<i.quantity) pending++;
+      totalFul+=(i.fulfilled_qty||0);
+      if((i.fulfilled_qty||0)<i.quantity) pending++;
     });
   });
-  const percent=totalQty? (100*totalFul/totalQty):0;
+  const percent=totalQty?(100*totalFul/totalQty):0;
   return {totalQty,totalFulfilled:totalFul,pending,percent};
+}
+
+function renderOrdersUI(){
+  const summary=calcSummary(_ordersFiltered);
+  const ordersHTML=_ordersFiltered.map(renderOrderBlock).join('')||'<p>Brak zamówień.</p>';
+  document.getElementById('reportArea').innerHTML=`
+    <div class="card no-print">
+      <h3>Raport odbiorów</h3>
+      <div class="toolbar">
+        <label>Filtr statusu:</label>
+        <select id="fltStatus" onchange="applyFilters()">
+          <option value="all">Wszystkie</option>
+          <option value="open">Tylko nieodebrane</option>
+          <option value="partial">Częściowe</option>
+          <option value="full">W pełni odebrane</option>
+        </select>
+        <label>Zakres dat:</label>
+        <input id="fltFrom" type="date" onchange="applyFilters()">
+        <input id="fltTo" type="date" onchange="applyFilters()">
+        <button onclick="exportCSV()">⬇️ Eksport CSV</button>
+        <button onclick="printPDF()">🖨️ Drukuj PDF</button>
+      </div>
+      <div class="summary">
+        <b>Łącznie odebrano:</b> ${summary.totalFulfilled} / ${summary.totalQty} (${summary.percent.toFixed(1)}%)<br>
+        <b>Pozycji nieodebranych:</b> ${summary.pending}
+      </div>
+    </div>
+
+    <div class="card print-only">
+      <h3>Raport odbiorów – wydruk</h3>
+      <div><b>Łącznie:</b> ${summary.totalFulfilled} / ${summary.totalQty} (${summary.percent.toFixed(1)}%) • Nieodebranych: ${summary.pending}</div>
+    </div>
+
+    ${ordersHTML}
+  `;
 }
 
 function renderOrderBlock(o){
@@ -234,8 +348,8 @@ function renderOrderBlock(o){
     return `<tr>
       <td>${esc(i.products?.name||'')}</td>
       <td class="right">${i.quantity}</td>
-      <td class="right">${i.fulfilled_qty}</td>
-      <td class="right">${i.unit_price.toFixed(2)}</td>
+      <td class="right">${i.fulfilled_qty||0}</td>
+      <td class="right">${(i.unit_price||0).toFixed(2)}</td>
       <td class="right"><span class="status ${cls}">${lbl}</span></td>
       <td class="right no-print">
         <button onclick="adjFulfilled('${i.id}',-1)">-1</button>
@@ -256,46 +370,31 @@ function renderOrderBlock(o){
 async function adjFulfilled(itemId,delta){
   const {data,error}=await sb.from('order_items').select('quantity,fulfilled_qty').eq('id',itemId).single();
   if(error) return logERR('Pobieranie pozycji',error);
-  let n=data.fulfilled_qty+delta; if(n<0)n=0; if(n>data.quantity)n=data.quantity;
+  let n=(data.fulfilled_qty||0)+delta; if(n<0)n=0; if(n>data.quantity)n=data.quantity;
   await sb.from('order_items').update({fulfilled_qty:n}).eq('id',itemId);
-  applyFilters(); // odśwież w miejscu
-}
-async function fulfillAll(itemId,qty){
-  await sb.from('order_items').update({fulfilled_qty:qty}).eq('id',itemId);
   applyFilters();
 }
+async function fulfillAll(itemId,qty){ await sb.from('order_items').update({fulfilled_qty:qty}).eq('id',itemId); applyFilters(); }
 
-// === Eksport CSV (aktualnie widoczne zamówienia) ===
+// === Export CSV (widok po filtrach) ===
 function exportCSV(){
-  const rows = [];
-  rows.push(['order_id','order_date','client','product','quantity','fulfilled_qty','unit_price','status']);
+  const rows=[['order_id','order_date','client','product','quantity','fulfilled_qty','unit_price','status']];
   _ordersFiltered.forEach(o=>{
     (o.order_items||[]).forEach(i=>{
-      const status = sLbl(i.quantity,i.fulfilled_qty||0);
-      rows.push([o.id,o.order_date,(o.clients?.name||''),(i.products?.name||''),i.quantity,i.fulfilled_qty,(i.unit_price||0),status]);
+      rows.push([o.id,o.order_date,(o.clients?.name||''),(i.products?.name||''),i.quantity,(i.fulfilled_qty||0),(i.unit_price||0),sLbl(i.quantity,i.fulfilled_qty||0)]);
     });
   });
-  const csv = rows.map(r=>r.map(escapeCSV).join(',')).join('\n');
-  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = `seedorders2-raport-${new Date().toISOString().slice(0,10)}.csv`;
-  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+  const csv=rows.map(r=>r.map(v=>{const s=(v==null?'':String(v)); return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s}).join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob); const a=document.createElement('a');
+  a.href=url; a.download=`seedorders2-raport-${new Date().toISOString().slice(0,10)}.csv`; document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
 }
-function escapeCSV(v){
-  const s = (v==null?'':String(v));
-  if(/[",\n]/.test(s)) return `"${s.replace(/"/g,'""')}"`;
-  return s;
-}
-
-// === Druk do PDF (używa okna wydruku przeglądarki) ===
-function printPDF(){
-  window.print(); // używa stylów @media print powyżej
-}
+// === Druk PDF przez okno drukowania ===
+function printPDF(){ window.print(); }
 
 // start
 showOrders();
 </script>
 </body>
 </html>
-
