@@ -5,10 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>SeedOrders — wspólna baza</title>
 <style>
-  :root{
-    --bg:#0b1020;--card:#121a2a;--ink:#e6f0ff;--muted:#a8b3c7;--brand:#3aa675;
-    --line:#24314a;--ok:#2ea043;--warn:#e3b341;--bad:#d73a49
-  }
+  :root{--bg:#0b1020;--card:#121a2a;--ink:#e6f0ff;--muted:#a8b3c7;--brand:#3aa675;--line:#24314a;--ok:#2ea043;--warn:#e3b341;--bad:#d73a49}
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font:16px system-ui,Segoe UI,Roboto,Arial}
   h2{margin:18px 0 10px}
@@ -183,10 +180,10 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-/* ==== WSTAW SWOJE KLUCZE SUPABASE ==== */
+/* ==== Twoje KLUCZE SUPABASE (już wstawione) ==== */
 const SUPABASE_URL = "https://zseqkyjcqkuvrqxluihs.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzZXFreWpjcWt1dnJxeGx1aWhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzNDk2NjUsImV4cCI6MjA3NjkyNTY2NX0.ubbYQzYWiMyETohwKRnVQZaZRoIA-zwiX2YsY8TPsDk";
-/* ===================================== */
+/* =============================================== */
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const q = (s)=>document.querySelector(s);
@@ -197,7 +194,7 @@ async function ping(){
     const { error } = await sb.from('seedorders_orders').select('id',{count:'exact',head:true}).limit(1);
     if(error) throw error;
     onlineEl.textContent='online'; onlineEl.style.background='#1f4b36'; onlineEl.style.color='#8de5b9';
-  }catch(e){ onlineEl.textContent='offline'; }
+  }catch(e){ onlineEl.textContent='offline'; console.error('PING:', e); }
 }
 ping();
 
@@ -561,4 +558,3 @@ q('#r_show').onclick=loadSummary;
 </script>
 </body>
 </html>
-
