@@ -701,6 +701,50 @@
     await loadOrders();
     await loadReport();
   })();
+    async function loadReport(){
+  const from = $('#rFrom').value || '2000-01-01';
+  const to = $('#rTo').value || '2100-01-01';
+  const cat = $('#rCat').value;
+
+  // Pobierz dane z przedziału dat
+  let query = db.from('seedorders_items')
+    .select('odmiana, kategoria, ordered_qty, delivered_qty, created_at')
+    .gte('created_at', from)
+    .lte('created_at', to);
+
+  // Filtrowanie po kategorii
+  if(cat && cat !== 'Wszystkie') query = query.eq('kategoria', cat);
+
+  const { data, error } = await query;
+  if(error){ alert('Błąd raportu: ' + error.message); return; }
+
+  // Sumowanie ilości zamówionych i wydanych dla każdej odmiany
+  const sums = {};
+  data.forEach(r => {
+    if(!sums[r.odmiana]) sums[r.odmiana] = { kategoria: r.kategoria, zam: 0, wyd: 0 };
+    sums[r.odmiana].zam += r.ordered_qty || 0;
+    sums[r.odmiana].wyd += r.delivered_qty || 0;
+  });
+
+  // Renderowanie tabeli raportu
+  const tbody = $('#reportTable tbody');
+  tbody.innerHTML = '';
+  Object.entries(sums).forEach(([odmiana, s]) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${s.kategoria}</td>
+      <td>${odmiana}</td>
+      <td>${s.zam}</td>
+      <td>${s.wyd}</td>
+      <td>${s.zam - s.wyd}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  $('#rRange').textContent = `${from} → ${to}`;
+}
+
   </script>
 </body>
 </html>
+
