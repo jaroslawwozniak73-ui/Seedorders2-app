@@ -459,9 +459,10 @@
 
   async function changeDelivery(itemId, delta){
     // Pobierz rekord
-    const { data, error } = await db.from('seedorders_items')
-      .select('id, ordered_qty, delivered_qty, ilosc, wydano, order_id')
-      .eq('id', itemId).single();
+ const { data, error } = await db.from('seedorders_items')
+  .select('id, ordered_qty, delivered_qty, order_id')
+  .eq('id', itemId).single();
+
     if(error){ alert('Błąd odczytu pozycji: '+error.message); return; }
     // Wersja nowa/stara
     const ord = data.ordered_qty ?? data.ilosc ?? 0;
@@ -483,8 +484,10 @@
 
   async function updateOrderStatusByItems(orderId){
     // Pobierz pozycje i wylicz status
-    const { data, error } = await db.from('seedorders_items')
-      .select('ordered_qty,delivered_qty,ilosc,wydano').eq('order_id', orderId);
+  const { data, error } = await db.from('seedorders_items')
+  .select('ordered_qty, delivered_qty')
+  .eq('order_id', orderId);
+
     if(error) return;
     let totalOrd=0, totalDel=0;
     data.forEach(r=>{
@@ -523,9 +526,10 @@
   }
 
   async function loadItemsFor(orderId){
-    const { data, error } = await db.from('seedorders_items')
-      .select('id,kategoria,odmiana,cena,dostawca,ordered_qty,delivered_qty,ilosc,wydano')
-      .eq('order_id', orderId);
+   const { data, error } = await db.from('seedorders_items')
+  .select('id,kategoria,odmiana,cena,dostawca,ordered_qty,delivered_qty,order_id')
+  .eq('order_id', orderId);
+
     if(error){ console.error(error); return []; }
     return data.map(r=>({
       id:r.id,
@@ -747,4 +751,5 @@
   </script>
 </body>
 </html>
+
 
