@@ -176,8 +176,8 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
   <script>
   // ====== KONFIGURACJA SUPABASE (WSTAW SWOJE KLUCZE) ======
-  const SUPABASE_URL  = 'https://zseqkyjcqkuvrqxluihs.supabase.co';         
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzZXFreWpjcWt1dnJxeGx1aWhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzNDk2NjUsImV4cCI6MjA3NjkyNTY2NX0.ubbYQzYWiMyETohwKRnVQZaZRoIA-zwiX2YsY8TPsDk';           
+  const SUPABASE_URL  = 'https://zseqkyjcqkuvrqxluihs.supabase.co';          
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzZXFreWpjcWt1dnJxeGx1aWhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzNDk2NjUsImV4cCI6MjA3NjkyNTY2NX0.ubbYQzYWiMyETohwKRnVQZaZRoIA-zwiX2YsY8TPsDk';       
   const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession:false }});
 
   // ====== POMOCNICZE ======
@@ -683,59 +683,24 @@
     await loadReport();
   })();
 
- // ZDARZENIA UI (bezpieczne bindowanie, nic się nie wywali gdy brakuje elementu) -->
-(function () {
-  const $  = (s) => document.querySelector(s);
+  // ====== ZDARZENIA UI ======
+  $('#refreshAll')?.addEventListener('click', async ()=>{ await setStatus(); await loadPrices(); await loadClients(); await loadOrders(); await loadReport(); });
+  $('#togglePrices')?.addEventListener('click', (e)=>{ const b=$('#pricesBody'); const btn=e.target; const hide=b.style.display==='none'; b.style.display= hide?'grid':'none'; btn.textContent= hide?'Ukryj':'Pokaż'; });
+  $('#toggleClients')?.addEventListener('click', (e)=>{ const b=$('#clientsBody'); const btn=e.target; const hide=b.style.display==='none'; b.style.display= hide?'grid':'none'; btn.textContent= hide?'Ukryj':'Pokaż'; });
 
-  // pomocnik: bezpieczne podpinanie
-  const bind = (sel, ev, fn) => {
-    const el = $(sel);
-    if (!el) return;                // jeśli nie ma elementu – po prostu pomijamy
-    try { el.addEventListener(ev, fn, { passive: false }); }
-    catch (e) { console.error('Bind error', sel, e); }
-  };
-
-  // Główny „Odśwież wszystko”
-  bind('#refreshAll', 'click', async () => {
-    try {
-      await setStatus();
-      await loadPrices();
-      await loadClients();
-      await loadOrders();
-      await loadReport();
-    } catch (e) { console.error('refreshAll', e); }
-  });
-
-  // Cennik
-  bind('#pSave',     'click',  savePrice);
-  bind('#pDelete',   'click',  deletePrice);
-  bind('#pSearch',   'input',  renderPrices);
-  bind('#pOdmiana',  'change', renderPrices);
-  bind('#pKategoria','change', renderPrices);
-  bind('#pDostawca', 'change', renderPrices);
-
-  // Klienci
-  bind('#cSave',     'click',  saveClient);
-  bind('#cDelete',   'click',  deleteClient);
-  bind('#cSearch',   'input',  renderClients);
-  bind('#cRefresh',  'click',  loadClients);
-
-  // Zamówienia
-  bind('#oAddItem',      'click',  addOrderItem);
-  bind('#oSearch',       'input',  renderOrders);
-  bind('#oStatusFilter', 'change', renderOrders);
-  bind('#oReload',       'click',  loadOrders);
-
-  // Raport
-  bind('#rShow', 'click',  loadReport);
-  bind('#rCSV',  'click',  downloadCSV);
-})();
-</script>
-
-
+  $('#pSave')?.addEventListener('click', savePrice);
+  $('#pSearch')?.addEventListener('input', renderPrices);
+  $('#cSave')?.addEventListener('click', saveClient);
+  $('#cDelete')?.addEventListener('click', deleteClient);
+  $('#cSearch')?.addEventListener('input', renderClients);
+  $('#cRefresh')?.addEventListener('click', loadClients);
+  $('#addItem')?.addEventListener('click', addOrderItem);
+  $('#oSearch')?.addEventListener('input', renderOrders);
+  $('#oStatusFilter')?.addEventListener('change', renderOrders);
+  $('#oReload')?.addEventListener('click', loadOrders);
+  $('#rShow')?.addEventListener('click', loadReport);
+  $('#rCSV')?.addEventListener('click', downloadCSV);
+  </script>
 </div>
 </body>
 </html>
-
-
-
