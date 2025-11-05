@@ -683,73 +683,59 @@
     await loadReport();
   })();
 
- <!-- ZDARZENIA UI (bezpieczne bindowanie) -->
+ <!-- ZDARZENIA UI (bezpieczne bindowanie, nic się nie wywali gdy brakuje elementu) -->
 <script>
-  // pomocnik: dodaje listener tylko jeśli element istnieje
+(function () {
+  const $  = (s) => document.querySelector(s);
+
+  // pomocnik: bezpieczne podpinanie
   const bind = (sel, ev, fn) => {
-    const el = document.querySelector(sel);
-    if (el) el.addEventListener(ev, fn);
+    const el = $(sel);
+    if (!el) return;                // jeśli nie ma elementu – po prostu pomijamy
+    try { el.addEventListener(ev, fn, { passive: false }); }
+    catch (e) { console.error('Bind error', sel, e); }
   };
 
-  // odśwież wszystko
-  bind('#refreshAll','click', async () => {
-    try{
+  // Główny „Odśwież wszystko”
+  bind('#refreshAll', 'click', async () => {
+    try {
       await setStatus();
       await loadPrices();
       await loadClients();
-      fillOdmianyFor(document.querySelector('#oKategoria')?.value);
       await loadOrders();
       await loadReport();
-    }catch(e){ console.error(e); }
+    } catch (e) { console.error('refreshAll', e); }
   });
 
-  // chowaj/pokazuj cennik
-  bind('#togglePrices','click', () => {
-    const body = document.querySelector('#pricesBody');
-    if(!body) return;
-    const hide = body.style.display==='none';
-    body.style.display = hide?'grid':'none';
-    const btn = document.querySelector('#togglePrices');
-    if(btn) btn.textContent = hide?'Ukryj':'Pokaż';
-  });
-
-  // chowaj/pokazuj klientów
-  bind('#toggleClients','click', () => {
-    const body = document.querySelector('#clientsBody');
-    if(!body) return;
-    const hide = body.style.display==='none';
-    body.style.display = hide?'grid':'none';
-    const btn = document.querySelector('#toggleClients');
-    if(btn) btn.textContent = hide?'Ukryj':'Pokaż';
-  });
-
-  // cennik — akcje
-  bind('#pSave','click', savePrice);
-  bind('#pDelete','click', deletePrice);
-  bind('#pSearch','input', renderPrices);
-  bind('#pOdmiana','change', renderPrices);
+  // Cennik
+  bind('#pSave',     'click',  savePrice);
+  bind('#pDelete',   'click',  deletePrice);
+  bind('#pSearch',   'input',  renderPrices);
+  bind('#pOdmiana',  'change', renderPrices);
   bind('#pKategoria','change', renderPrices);
-  bind('#pDostawca','change', renderPrices);
+  bind('#pDostawca', 'change', renderPrices);
 
-  // klienci — akcje
-  bind('#cSave','click', saveClient);
-  bind('#cDelete','click', deleteClient);
-  bind('#cSearch','input', renderClients);
-  bind('#cRefresh','click', loadClients);
+  // Klienci
+  bind('#cSave',     'click',  saveClient);
+  bind('#cDelete',   'click',  deleteClient);
+  bind('#cSearch',   'input',  renderClients);
+  bind('#cRefresh',  'click',  loadClients);
 
-  // zamówienia — akcje
-  bind('#oAddItem','click', addOrderItem);
-  bind('#oSearch','input', renderOrders);
-  bind('#oStatusFilter','change', renderOrders);
-  bind('#oReload','click', loadOrders);
+  // Zamówienia
+  bind('#oAddItem',      'click',  addOrderItem);
+  bind('#oSearch',       'input',  renderOrders);
+  bind('#oStatusFilter', 'change', renderOrders);
+  bind('#oReload',       'click',  loadOrders);
 
-  // raport — akcje
-  bind('#rShow','click', loadReport);
-  bind('#rCSV','click', downloadCSV);
+  // Raport
+  bind('#rShow', 'click',  loadReport);
+  bind('#rCSV',  'click',  downloadCSV);
+})();
 </script>
-<!-- KONIEC: ZDARZENIA UI -->
+
 
 </div>
 </body>
 </html>
+
 
