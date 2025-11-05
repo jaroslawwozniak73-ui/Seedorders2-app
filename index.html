@@ -640,23 +640,70 @@ function downloadCSV(){
 }
 
 // ====== ZDARZENIA UI ======
-$('#refreshAll').onclick = async ()=>{ await setStatus(); await loadPrices(); await loadClients(); await loadOrders(); await loadReport(); };
+<!-- nic tu nie zmieniaj w HTML; zmieniamy tylko JS -->
 
-$('#togglePrices').onclick = ()=>{
-  const b=$('#pricesBody'); const btn=$('#togglePrices'); const hide=b.style.display==='none'; b.style.display = hide?'':'none'; btn.textContent = hide?'Ukryj':'Pokaż';
-};
-$('#toggleClients').onclick = ()=>{
-  const b=$('#clientsBody'); const btn=$('#toggleClients'); const hide=b.style.display==='none'; b.style.display = hide?'':'none'; btn.textContent = hide?'Ukryj':'Pokaż';
-};
+<script>
+  // ...powyżej zostaw wszystko jak jest...
 
-$('#pSave').onclick = savePrice; $('#pDelete').onclick=deletePrice; $('#pSearch').oninput=renderPrices;
-$('#cSave').onclick=saveClient; $('#cDelete').onclick=deleteClient; $('#cSearch').oninput=renderClients; $('#cRefresh').onclick=loadClients;
+  // ===== ZDARZENIA UI =====
+  // Pomocnicza funkcja: podpina handler tylko jeśli element istnieje
+  const on = (sel, ev, fn) => {
+    const el = $(sel);
+    if (el) el.addEventListener(ev, fn);
+  };
 
-$('#oAddItem').onclick=addOrderItem; $('#oSearch').oninput=()=>renderOrders(($('#oSearch').value||'').toLowerCase(), $('#oStatusFilter').value);
-$('#oStatusFilter').onchange=()=>renderOrders(($('#oSearch').value||'').toLowerCase(), $('#oStatusFilter').value);
-$('#oReload').onclick=loadOrders;
+  // Odśwież wszystko
+  on('#refreshAll', 'click', async () => {
+    await setStatus();
+    await loadPrices();
+    await loadClients();
+    await loadOrders();
+    await loadReport();
+  });
 
-$('#rShow').onclick=loadReport; $('#rCSV').onclick=downloadCSV;
+  // Pokaż/ukryj cennik
+  on('#togglePrices', 'click', () => {
+    const b = $('#pricesBody');
+    const btn = $('#togglePrices');
+    const hide = b.style.display === 'none';
+    b.style.display = hide ? 'grid' : 'none';
+    if (btn) btn.textContent = hide ? 'Ukryj' : 'Pokaż';
+  });
+
+  // Pokaż/ukryj kontrahentów
+  on('#toggleClients', 'click', () => {
+    const b = $('#clientsBody');
+    const btn = $('#toggleClients');
+    const hide = b.style.display === 'none';
+    b.style.display = hide ? 'grid' : 'none';
+    if (btn) btn.textContent = hide ? 'Ukryj' : 'Pokaż';
+  });
+
+  // Cennik
+  on('#pSave', 'click', savePrice);
+  on('#pDelete', 'click', deletePrice);
+  on('#pSearch', 'input', renderPrices);
+  on('#fRzepak', 'change', renderPrices);
+  on('#fKukurydza', 'change', renderPrices);
+  on('#fZboza', 'change', renderPrices);
+  on('#fTrawy', 'change', renderPrices);
+  on('#fInne', 'change', renderPrices);
+
+  // Kontrahenci
+  on('#cSave', 'click', saveClient);
+  on('#cDelete', 'click', deleteClient);
+  on('#cSearch', 'input', renderClients);
+  on('#cRefresh', 'click', loadClients);
+
+  // Zamówienia
+  on('#oAddItem', 'click', addOrderItem);
+  on('#oSearch', 'input', renderOrders);
+  on('#oStatusFilter', 'change', renderOrders);
+  on('#oReload', 'click', loadOrders);  // jeśli nie masz tego przycisku w HTML, możesz tę linię usunąć
+
+  // Raport
+  on('#rShow', 'click', loadReport);    // jeśli nie masz przycisku "Pokaż", usuń tę linię
+  on('#rCSV', 'click', downloadCSV);    // jeśli nie masz przycisku "CSV", usuń tę linię
 
 // ====== START ======
 (async function boot(){
@@ -671,4 +718,5 @@ $('#rShow').onclick=loadReport; $('#rCSV').onclick=downloadCSV;
 </script>
 </body>
 </html>
+
 
