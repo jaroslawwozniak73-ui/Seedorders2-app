@@ -683,24 +683,73 @@
     await loadReport();
   })();
 
-  // ====== ZDARZENIA UI ======
-  $('#refreshAll')?.addEventListener('click', async ()=>{ await setStatus(); await loadPrices(); await loadClients(); await loadOrders(); await loadReport(); });
-  $('#togglePrices')?.addEventListener('click', (e)=>{ const b=$('#pricesBody'); const btn=e.target; const hide=b.style.display==='none'; b.style.display= hide?'grid':'none'; btn.textContent= hide?'Ukryj':'Pokaż'; });
-  $('#toggleClients')?.addEventListener('click', (e)=>{ const b=$('#clientsBody'); const btn=e.target; const hide=b.style.display==='none'; b.style.display= hide?'grid':'none'; btn.textContent= hide?'Ukryj':'Pokaż'; });
+ <!-- ZDARZENIA UI (bezpieczne bindowanie) -->
+<script>
+  // pomocnik: dodaje listener tylko jeśli element istnieje
+  const bind = (sel, ev, fn) => {
+    const el = document.querySelector(sel);
+    if (el) el.addEventListener(ev, fn);
+  };
 
-  $('#pSave')?.addEventListener('click', savePrice);
-  $('#pSearch')?.addEventListener('input', renderPrices);
-  $('#cSave')?.addEventListener('click', saveClient);
-  $('#cDelete')?.addEventListener('click', deleteClient);
-  $('#cSearch')?.addEventListener('input', renderClients);
-  $('#cRefresh')?.addEventListener('click', loadClients);
-  $('#addItem')?.addEventListener('click', addOrderItem);
-  $('#oSearch')?.addEventListener('input', renderOrders);
-  $('#oStatusFilter')?.addEventListener('change', renderOrders);
-  $('#oReload')?.addEventListener('click', loadOrders);
-  $('#rShow')?.addEventListener('click', loadReport);
-  $('#rCSV')?.addEventListener('click', downloadCSV);
-  </script>
+  // odśwież wszystko
+  bind('#refreshAll','click', async () => {
+    try{
+      await setStatus();
+      await loadPrices();
+      await loadClients();
+      fillOdmianyFor(document.querySelector('#oKategoria')?.value);
+      await loadOrders();
+      await loadReport();
+    }catch(e){ console.error(e); }
+  });
+
+  // chowaj/pokazuj cennik
+  bind('#togglePrices','click', () => {
+    const body = document.querySelector('#pricesBody');
+    if(!body) return;
+    const hide = body.style.display==='none';
+    body.style.display = hide?'grid':'none';
+    const btn = document.querySelector('#togglePrices');
+    if(btn) btn.textContent = hide?'Ukryj':'Pokaż';
+  });
+
+  // chowaj/pokazuj klientów
+  bind('#toggleClients','click', () => {
+    const body = document.querySelector('#clientsBody');
+    if(!body) return;
+    const hide = body.style.display==='none';
+    body.style.display = hide?'grid':'none';
+    const btn = document.querySelector('#toggleClients');
+    if(btn) btn.textContent = hide?'Ukryj':'Pokaż';
+  });
+
+  // cennik — akcje
+  bind('#pSave','click', savePrice);
+  bind('#pDelete','click', deletePrice);
+  bind('#pSearch','input', renderPrices);
+  bind('#pOdmiana','change', renderPrices);
+  bind('#pKategoria','change', renderPrices);
+  bind('#pDostawca','change', renderPrices);
+
+  // klienci — akcje
+  bind('#cSave','click', saveClient);
+  bind('#cDelete','click', deleteClient);
+  bind('#cSearch','input', renderClients);
+  bind('#cRefresh','click', loadClients);
+
+  // zamówienia — akcje
+  bind('#oAddItem','click', addOrderItem);
+  bind('#oSearch','input', renderOrders);
+  bind('#oStatusFilter','change', renderOrders);
+  bind('#oReload','click', loadOrders);
+
+  // raport — akcje
+  bind('#rShow','click', loadReport);
+  bind('#rCSV','click', downloadCSV);
+</script>
+<!-- KONIEC: ZDARZENIA UI -->
+
 </div>
 </body>
 </html>
+
