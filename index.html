@@ -176,71 +176,9 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
   <script>
   // ====== KONFIGURACJA SUPABASE (WSTAW SWOJE KLUCZE) ======
-  const SUPABASE_URL  = 'https://zseqkyjcqkuvrqxluihs.supabase.co';        
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzZXFreWpjcWt1dnJxeGx1aWhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzNDk2NjUsImV4cCI6MjA3NjkyNTY2NX0.ubbYQzYWiMyETohwKRnVQZaZRoIA-zwiX2YsY8TPsDk';            
+  const SUPABASE_URL  = 'https://zseqkyjcqkuvrqxluihs.supabase.co';         
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzZXFreWpjcWt1dnJxeGx1aWhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzNDk2NjUsImV4cCI6MjA3NjkyNTY2NX0.ubbYQzYWiMyETohwKRnVQZaZRoIA-zwiX2YsY8TPsDk';           
   const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession:false }});
-
-    <script>
-// Bezpieczne selektory i podpinanie zdarzeń (żeby nie było "Cannot set ... onclick of null")
-const $  = (sel)=> document.querySelector(sel);
-const $$ = (sel)=> document.querySelectorAll(sel);
-const on = (sel, ev, fn)=>{
-  const el = $(sel);
-  if (el) el.addEventListener(ev, fn);
-};
-
-// Zastępstwo dla starych przypisań .onclick = ...
-// PRZYKŁADY (dopasowane do Twojego pliku):
-on('#refreshAll', 'click', async ()=>{ try{
-  await setStatus(); await loadPrices(); await loadClients(); fillOdmianyFor($('#oKategoria').value); await loadOrders(); await loadReport();
-}catch(e){ console.error(e); }});
-
-on('#togglePrices', 'click', ()=>{
-  const body = $('#pricesBody'); if(!body) return;
-  const hide = body.style.display==='none'; body.style.display = hide?'grid':'none';
-  $('#togglePrices').textContent = hide?'Ukryj':'Pokaż';
-});
-
-on('#toggleClients', 'click', ()=>{
-  const body = $('#clientsBody'); if(!body) return;
-  const hide = body.style.display==='none'; body.style.display = hide?'grid':'none';
-  $('#toggleClients').textContent = hide?'Ukryj':'Pokaż';
-});
-
-// Cennik
-on('#pSave','click', savePrice);
-on('#pDelete','click', deletePrice);
-on('#pSearch','input', renderPrices);
-['#fRzepak','#fKukurydza','#fZboza','#fTrawy','#fInne'].forEach(id=> on(id,'change', renderPrices));
-
-// Klienci
-on('#cSave','click', saveClient);
-on('#cDelete','click', deleteClient);
-on('#cSearch','input', renderClients);
-on('#cRefresh','click', loadClients);
-
-// Zamówienia (dodawanie, filtr, raport)
-on('#oAddItem','click', addOrderItem);
-on('#oSearch','input', renderOrders);
-on('#oStatusFilter','change', renderOrders);
-on('#oReload','click', loadOrders);
-on('#rShow','click', loadReport);
-on('#rCSV','click', downloadCSV);
-
-// Start aplikacji — odpala się dopiero gdy DOM jest gotowy
-document.addEventListener('DOMContentLoaded', async ()=>{
-  try{
-    setDefaultReportRange();
-    await setStatus();
-    await loadPrices();
-    await loadClients();
-    fillOdmianyFor($('#oKategoria').value);
-    await loadOrders();
-    await loadReport();
-  }catch(e){ console.error(e); }
-});
-</script>
-
 
   // ====== POMOCNICZE ======
   const $  = sel => document.querySelector(sel);
@@ -766,4 +704,3 @@ document.addEventListener('DOMContentLoaded', async ()=>{
 </div>
 </body>
 </html>
-
