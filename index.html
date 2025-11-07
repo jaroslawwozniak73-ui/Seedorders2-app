@@ -2,149 +2,146 @@
 <html lang="pl">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>SeedOrders — wspólna baza</title>
   <style>
     :root{
       --bg:#0b1020; --panel:#111936; --muted:#99a6c0; --text:#e9f0ff;
-      --accent:#36d399; --accent2:#60a5fa; --danger:#ef4444; --line:#2a345a;
-      --chip:#101827;
+      --accent:#36d399; --danger:#ef4444; --line:#2a345a; --ghost:#1a2344;
     }
     *{box-sizing:border-box}
     body{margin:0;font:15px/1.4 ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial;color:var(--text);background:var(--bg)}
     .wrap{max-width:1200px;margin:auto;padding:16px;display:grid;gap:16px}
     .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
-    .flex{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-    h1{font-size:20px;margin:0}
-    h2{font-size:16px;margin:0 0 6px 0;color:#dbe7ff}
-    input,select,button,textarea{background:#0e1436;border:1px solid var(--line);color:var(--text);padding:10px;border-radius:10px;outline:none}
-    input::placeholder,textarea::placeholder{color:#7481a8}
-    button{cursor:pointer}
-    button.primary{background:var(--accent);color:#042016;font-weight:600;border:0}
-    button.warn{background:#0e1436;border:1px solid #facc15;color:#facc15}
-    button.danger{background:#700b0b;border:1px solid #ef4444;color:#ffdddd}
-    button.ghost{background:#0e1436}
-    .btn-sm{padding:6px 10px;border-radius:8px;font-size:12px}
-    .right{margin-left:auto}
+    .row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
     .grid{display:grid;gap:10px}
-    .row{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
-    @media (max-width:1000px){ .row{grid-template-columns:repeat(2,minmax(0,1fr))} }
-    table{width:100%;border-collapse:collapse}
-    th,td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left}
+    .flex{display:flex;gap:8px;align-items:center}
     .muted{color:var(--muted)}
-    .status{font-weight:700;padding:2px 8px;border-radius:999px}
-    .sok{background:#19351f;color:#78f5a9;border:1px solid #245f39}
-    .swarn{background:#3b2d1a;color:#facc15;border:1px solid #6b4f17}
-    .sdanger{background:#402431;color:#ff9ab1;border:1px solid #7a2b45}
-    .chip{background:var(--chip);border:1px dashed var(--line);padding:4px 8px;border-radius:999px;font-size:12px}
-    .order{display:grid;gap:10px;border:1px dashed var(--line);padding:10px;border-radius:12px;background:#0c1433}
-    .order-header{display:flex;gap:10px;align-items:center;border-bottom:1px dashed var(--line);padding-bottom:6px}
-    .kbd{font-family:ui-monospace,Menlo,Consolas,monospace;background:#111b44;padding:2px 6px;border-radius:6px;border:1px solid #26306a}
-    .sticky{position:sticky;top:0;z-index:5}
-    .pill{display:inline-flex;gap:8px;align-items:center}
     .small{font-size:12px}
+    input,select,button,textarea{width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);background:#0e1530;color:var(--text)}
+    textarea{min-height:70px}
+    button{cursor:pointer;background:var(--accent);border:0;color:#0b1020;font-weight:600}
+    button.ghost{background:var(--ghost);color:#fff}
+    button.warn{background:var(--danger);color:#fff}
+    .btn-sm{padding:6px 10px;border-radius:9px;font-size:13px}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:8px;border-bottom:1px solid var(--line);vertical-align:top}
+    .chip{display:inline-flex;align-items:center;padding:3px 9px;border-radius:999px;border:1px solid var(--line);background:#0e1530}
+    .ok{color:#7fffd4}
+    .bad{color:#ffb4b4}
+    .right{text-align:right}
+    .grow{flex:1}
   </style>
 </head>
 <body>
 <div class="wrap">
 
-  <div class="panel sticky">
-    <div class="flex">
-      <h1>SeedOrders — wspólna baza</h1>
-      <span class="pill small">
-        <span id="status" class="chip">status…</span>
-        <span id="ts" class="chip">czas…</span>
-      </span>
-      <span class="right"></span>
-      <button id="refreshAll" class="ghost btn-sm">Odśwież wszystko</button>
-    </div>
+  <div class="flex">
+    <h1 class="grow">SeedOrders — wspólna baza</h1>
+    <span class="chip" id="status">offline</span>
+    <span class="chip" id="clock"></span>
+    <button id="refreshAll" class="ghost">Odśwież wszystko</button>
   </div>
 
   <!-- Cennik -->
-  <div class="panel grid">
+  <div class="panel">
     <div class="flex">
-      <h2>Cennik (<span class="kbd">seedorders_prices</span>)</h2>
-      <span class="right"></span>
-      <button id="togglePrices" class="ghost btn-sm">Ukryj</button>
+      <h2 class="grow">Cennik (seedorders_prices)</h2>
     </div>
-    <div id="pricesBody" class="grid">
+    <div class="grid">
       <div class="row">
-        <select id="pKategoria">
+        <select id="pCategory">
           <option value="Rzepak">Rzepak</option>
           <option value="Kukurydza">Kukurydza</option>
           <option value="Zboża">Zboża</option>
           <option value="Trawy">Trawy</option>
           <option value="Inne">Inne</option>
         </select>
-        <input id="pOdmiana" placeholder="Odmiana" />
-        <input id="pCena" type="number" step="0.01" placeholder="Cena / szt." />
-        <input id="pDostawca" placeholder="Dostawca (opcjonalnie)" />
-        <button id="pSave" class="primary">Zapisz</button>
-        <input id="pSearch" class="right" placeholder="Szukaj w cenniku…" />
+        <input id="pVar" placeholder="Odmiana" />
       </div>
-      <table class="table" id="pricesTable">
-        <thead><tr><th>Odmiana</th><th>Kategoria</th><th>Cena</th><th>Dostawca</th><th></th></tr></thead>
-        <tbody></tbody>
+      <div class="row">
+        <input id="pPrice" type="number" step="0.01" placeholder="Cena / szt." />
+        <input id="pVendor" placeholder="Dostawca (opcjonalnie)" />
+      </div>
+      <div class="flex">
+        <button id="pSave" class="btn-sm">Zapisz/Edytuj</button>
+        <input id="pSearch" class="grow" placeholder="Szukaj w cenniku…" />
+      </div>
+      <table>
+        <thead>
+          <tr><th>Odmiana</th><th>Kategoria</th><th class="right">Cena</th><th>Dostawca</th><th></th></tr>
+        </thead>
+        <tbody id="pricesT"></tbody>
       </table>
     </div>
   </div>
 
   <!-- Kontrahenci -->
-  <div class="panel grid">
+  <div class="panel">
     <div class="flex">
-      <h2>Kontrahenci (<span class="kbd">seedorders_clients</span>)</h2>
-      <span class="right"></span>
-      <button id="toggleClients" class="ghost btn-sm">Ukryj</button>
+      <h2 class="grow">Kontrahenci (seedorders_clients)</h2>
     </div>
-    <div id="clientsBody" class="grid">
+    <div class="grid">
       <div class="row">
-        <input id="cName" placeholder="Nazwa (np. Jan Kowalski)" class="grow" />
+        <input id="cName" placeholder="Nazwa (np. Jan Kowalski)" />
         <input id="cPhone" placeholder="Telefon" />
-        <input id="cAddress" placeholder="Adres (ulica, kod, miejscowość, kraj)" class="grow" />
-        <button id="cSave" class="primary">Zapisz</button>
-        <button id="cDelete" class="danger">Usuń</button>
-        <input id="cSearch" class="right" placeholder="Szukaj klienta…" />
-        <button id="cRefresh" class="ghost">Odśwież listę</button>
       </div>
-      <table class="table" id="clientsTable">
-        <thead><tr><th>Nazwa</th><th>Telefon</th><th>Adres</th><th></th></tr></thead>
-        <tbody></tbody>
+      <div class="row">
+        <input id="cAddr" placeholder="Adres (ulica, kod, miejscowość, kraj)" />
+        <div class="flex">
+          <button id="cSave" class="btn-sm">Zapisz/Edytuj</button>
+          <button id="cDelete" class="btn-sm warn">Usuń</button>
+          <input id="cSearch" class="grow" placeholder="Szukaj klienta…" />
+          <button id="cRefresh" class="btn-sm ghost">Odśwież listę</button>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>Nazwa</th><th>Telefon</th><th>Adres</th></tr></thead>
+        <tbody id="clientsT"></tbody>
       </table>
     </div>
   </div>
 
   <!-- Dodaj zamówienie -->
-  <div class="panel grid">
-    <div class="flex"><h2>Dodaj zamówienie</h2></div>
+  <div class="panel">
+    <h2>Dodaj zamówienie</h2>
     <div class="row">
-      <select id="oClient" class="grow"></select>
-      <input id="oPhone" placeholder="Telefon (auto)" disabled />
-      <select id="oKategoria">
-        <option value="Rzepak">Rzepak</option>
-        <option value="Kukurydza">Kukurydza</option>
-        <option value="Zboża">Zboża</option>
-        <option value="Trawy">Trawy</option>
-        <option value="Inne">Inne</option>
+      <select id="oClient"></select>
+      <input id="oPhone" placeholder="Telefon (auto)" />
+    </div>
+    <div class="row">
+      <select id="oCategory">
+        <option>Rzepak</option><option>Kukurydza</option><option>Zboża</option>
+        <option>Trawy</option><option>Inne</option>
       </select>
-      <select id="oOdmiana" class="grow"><option value="">Odmiana (wg kategorii)</option></select>
-      <input id="oQty" type="number" step="1" min="1" value="1" />
+      <select id="oVar"></select>
+    </div>
+    <div class="row">
+      <input id="oQty" type="number" min="1" value="1" />
       <input id="oPrice" type="number" step="0.01" placeholder="Cena / szt." />
+    </div>
+    <div class="row">
       <input id="oVendor" placeholder="Dostawca (opcjonalnie)" />
-      <input id="oNotes" placeholder="Uwagi (opcjonalnie)" class="grow" />
-      <button id="addItem" class="primary">Dodaj pozycję</button>
+      <input id="oNotes" placeholder="Uwagi (opcjonalnie)" />
     </div>
-
     <div class="flex">
-      <h2>Zamówienia (ostatnie)</h2>
-      <input id="oSearch" class="srch" placeholder="Szukaj: klient/odmiana/uwagi…" />
-      <select id="oStatusFilter">
-        <option value="">Wszystkie statusy</option>
-        <option value="zamówione">zamówione</option>
-        <option value="częściowo">częściowo</option>
-        <option value="dostarczone">dostarczone</option>
-      </select>
-      <button id="oReload" class="ghost">Odśwież</button>
+      <button id="addItem">Dodaj pozycję</button>
     </div>
+  </div>
+
+  <!-- Zamówienia -->
+  <div class="panel">
+    <div class="flex">
+      <h2 class="grow">Zamówienia (ostatnie)</h2>
+    </div>
+    <input id="oSearch" placeholder="Szukaj: klient/odmiana/uwagi…" />
+    <select id="oStatusFilter">
+      <option value="">Wszystkie statusy</option>
+      <option value="zamówione">zamówione</option>
+      <option value="częściowo">częściowo</option>
+      <option value="dostarczone">dostarczone</option>
+    </select>
+    <button id="oReload" class="ghost">Odśwież</button>
     <div id="ordersContainer"></div>
   </div>
 
@@ -155,553 +152,343 @@
       <input id="rFrom" type="date" />
       <input id="rTo" type="date" />
       <select id="rCat">
-        <option value="">(Wszystkie)</option>
+        <option value="">(wszystkie)</option>
         <option value="Rzepak">Rzepak</option>
         <option value="Kukurydza">Kukurydza</option>
         <option value="Zboża">Zboża</option>
         <option value="Trawy">Trawy</option>
         <option value="Inne">Inne</option>
       </select>
-      <button id="rShow" class="primary">Pokaż</button>
-      <button id="rCSV" class="ghost">Pobierz CSV</button>
+      <button id="rShow" class="ghost">Pokaż</button>
     </div>
-    <table class="table" id="reportTable">
-      <thead><tr><th>Kategoria</th><th>Odmiana</th><th>Zamówiono</th><th>Wydano</th><th>Pozostało</th></tr></thead>
-      <tbody></tbody>
+    <table>
+      <thead><tr><th>Kategoria</th><th>Odmiana</th><th class="right">Zam.</th><th class="right">Wyd.</th></tr></thead>
+      <tbody id="reportT"></tbody>
     </table>
     <div class="small muted">Zakres: <span id="rRange"></span></div>
   </div>
 
-  <!-- Supabase SDK -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script>
-  // ====== KONFIGURACJA SUPABASE (WSTAW SWOJE KLUCZE) ======
-  const SUPABASE_URL  = 'https://zseqkyjcqkuvrqxluihs.supabase.co';          
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzZXFreWpjcWt1dnJxeGx1aWhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzNDk2NjUsImV4cCI6MjA3NjkyNTY2NX0.ubbYQzYWiMyETohwKRnVQZaZRoIA-zwiX2YsY8TPsDk';       
-  const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession:false }});
-
-  // ====== POMOCNICZE ======
-  const $  = sel => document.querySelector(sel);
-  const $$ = sel => document.querySelectorAll(sel);
-  const fmt = n => (n??0).toLocaleString('pl-PL');
-  const nowISO = () => new Date().toISOString();
-  const sleep = ms => new Promise(r=>setTimeout(r,ms));
-
-  async function setStatus(){
-    try{
-      const { error } = await db.from('seedorders_prices').select('id').limit(1);
-      const s = $('#status');
-      if(error){ s.textContent = 'status: offline'; s.className = 'chip sdanger'; }
-      else{ s.textContent = 'status: online'; s.className = 'chip sok'; }
-    }catch(e){
-      const s = $('#status'); s.textContent = 'status: offline'; s.className = 'chip sdanger';
-    }
-    $('#ts').textContent = new Date().toLocaleTimeString('pl-PL');
-  }
-
-  // ====== CENNIK ======
-  let prices = [];
-  let selectedPriceId = null;
-  const categoryAllowed = kat => ['Rzepak','Kukurydza','Zboża','Trawy','Inne'].includes(kat);
-
-  async function loadPrices(){
-    const { data, error } = await db.from('seedorders_prices')
-      .select('id,odmiana,kategoria,cena,dostawca,created_at')
-      .order('odmiana', { ascending:true });
-    if(error){ console.error(error); return; }
-    prices = data||[];
-    renderPrices();
-    fillOdmianyFor($('#oKategoria').value);
-  }
-
-  function renderPrices(){
-    const q = ($('#pSearch').value||'').toLowerCase();
-    const tbody = $('#pricesTable tbody'); tbody.innerHTML = '';
-    prices
-      .filter(r=> (categoryAllowed(r.kategoria)) &&
-                  (`${r.odmiana||''} ${r.kategoria||''} ${r.dostawca||''}`.toLowerCase().includes(q)))
-      .forEach(r=>{
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${r.odmiana||''}</td>
-          <td>${r.kategoria||''}</td>
-          <td>${fmt(r.cena)}</td>
-          <td>${r.dostawca||''}</td>
-          <td><button class="btn-sm ghost">Edytuj</button></td>
-        `;
-        tr.querySelector('button').onclick = ()=>{
-          selectedPriceId = r.id;
-          $('#pOdmiana').value = r.odmiana||'';
-          $('#pKategoria').value = r.kategoria||'';
-          $('#pCena').value = r.cena||'';
-          $('#pDostawca').value = r.dostawca||'';
-        };
-        tbody.appendChild(tr);
-      });
-  }
-
-  async function savePrice(){
-    const row = {
-      odmiana: ($('#pOdmiana').value||'').trim(),
-      kategoria: $('#pKategoria').value,
-      cena: Number($('#pCena').value||null),
-      dostawca: ($('#pDostawca').value||'').trim()||null,
-      created_at: nowISO()
-    };
-    if(!row.odmiana){ alert('Podaj odmianę.'); return; }
-
-    if(selectedPriceId){
-      const { error } = await db.from('seedorders_prices').update(row).eq('id', selectedPriceId);
-      if(error) alert('Błąd cennika (edycja): '+error.message);
-    }else{
-      const { error } = await db.from('seedorders_prices').insert(row);
-      if(error) alert('Błąd cennika (zapis): '+error.message);
-    }
-    selectedPriceId = null;
-    $('#pOdmiana').value=''; $('#pKategoria').value='Rzepak'; $('#pCena').value=''; $('#pDostawca').value='';
-    await loadPrices();
-  }
-
-  async function deletePrice(){
-    if(!selectedPriceId){ alert('Najpierw wybierz pozycję (Edytuj).'); return; }
-    if(!confirm('Usunąć pozycję z cennika?')) return;
-    const { error } = await db.from('seedorders_prices').delete().eq('id', selectedPriceId);
-    if(error) alert('Błąd usuwania: '+error.message);
-    selectedPriceId=null; await loadPrices();
-  }
-
-  // ====== KONTRAHENCI ======
-  let clients = [];
-  let selectedClientId = null;
-
-  async function loadClients(){
-    const { data, error } = await db.from('seedorders_clients')
-      .select('id,name,phone,address').order('name',{ascending:true});
-    if(error){ console.error(error); return; }
-    clients = data||[];
-    renderClients();
-    fillClientsSelect();
-  }
-
-  function renderClients(){
-    const q = ($('#cSearch').value||'').toLowerCase();
-    const tbody = $('#clientsTable tbody'); tbody.innerHTML = '';
-    clients.filter(r => !q || (`${r.name||''} ${r.phone||''} ${r.address||''}`.toLowerCase().includes(q)))
-      .forEach(r=>{
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${r.name||''}</td>
-          <td>${r.phone||''}</td>
-          <td>${r.address||''}</td>
-          <td><button class="btn-sm ghost">Edytuj</button></td>
-        `;
-        tr.querySelector('button').onclick = ()=>{
-          selectedClientId = r.id;
-          $('#cName').value = r.name||'';
-          $('#cPhone').value = r.phone||'';
-          $('#cAddress').value = r.address||'';
-        };
-        tbody.appendChild(tr);
-      });
-  }
-
-  function fillClientsSelect(){
-    const sel = $('#oClient'); sel.innerHTML='';
-    clients.forEach(c=>{
-      const opt=document.createElement('option'); opt.value=c.id; opt.textContent=c.name;
-      sel.appendChild(opt);
-    });
-    const cur = clients.find(c=>c.id===sel.value);
-    $('#oPhone').value = cur ? (cur.phone||'') : '';
-    $('#oClient').addEventListener('change', ()=>{
-      const c = clients.find(x=>x.id===$('#oClient').value)||{};
-      $('#oPhone').value = c.phone||'';
-    },{once:true});
-  }
-
-  async function saveClient(){
-    const row = {
-      name: ($('#cName').value||'').trim(),
-      phone: ($('#cPhone').value||'').trim()||null,
-      address: ($('#cAddress').value||'').trim()||null
-    };
-    if(!row.name){ alert('Podaj nazwę kontrahenta.'); return; }
-
-    if(selectedClientId){
-      const { error } = await db.from('seedorders_clients').update(row).eq('id', selectedClientId);
-      if(error) alert('Błąd edycji klienta: '+error.message);
-    }else{
-      const { error } = await db.from('seedorders_clients').insert(row);
-      if(error) alert('Błąd dodawania klienta: '+error.message);
-    }
-    selectedClientId=null; $('#cName').value=''; $('#cPhone').value=''; $('#cAddress').value='';
-    await loadClients();
-  }
-
-  async function deleteClient(){
-    if(!selectedClientId){ alert('Najpierw wybierz klienta (Edytuj).'); return; }
-    if(!confirm('Usunąć klienta?')) return;
-    const { error } = await db.from('seedorders_clients').delete().eq('id', selectedClientId);
-    if(error) alert('Błąd usuwania klienta: '+error.message);
-    selectedClientId=null; await loadClients();
-  }
-
-  // ====== ZAMÓWIENIA ======
-  function fillOdmianyFor(kat){
-    const sel = $('#oOdmiana'); sel.innerHTML = `<option value="">Odmiana (wg kategorii)</option>`;
-    (prices||[]).filter(p=>p.kategoria===kat).forEach(p=>{
-      const o = document.createElement('option');
-      o.value=p.odmiana; o.textContent = `${p.odmiana}${p.dostawca?` (${p.dostawca})`:''} — ${Number(p.cena||0).toFixed(2)} zł`;
-      sel.appendChild(o);
-    });
-  }
-  $('#oKategoria').addEventListener('change', ()=> fillOdmianyFor($('#oKategoria').value));
-
-  async function upsertOrderForSelectedClient(){
-    const id = $('#oClient').value;
-    const c  = clients.find(x=>x.id===id)||{};
-    if(!c.id){ alert('Wybierz klienta.'); return null; }
-
-    // Czy istnieje DZISIEJSZE zamówienie dla tego klienta?
-    const { data, error } = await db.from('seedorders_orders')
-      .select('id,created_at').eq('client_id', c.id).order('created_at', {ascending:false}).limit(1);
-    if(error){ alert('Błąd odczytu zamówień: '+error.message); return null; }
-
-    let orderId = data?.[0]?.id || null;
-    if(!orderId){
-      const ins = {
-        client_id: c.id, client: c.name, phone: c.phone||null,
-        notes: ($('#oNotes').value||'').trim()||null,
-        status: 'zamówione', created_at: nowISO()
-      };
-      const { data:created, error:err2 } = await db.from('seedorders_orders').insert(ins).select('id').single();
-      if(err2){ alert('Błąd tworzenia nagłówka zamówienia: '+err2.message); return null; }
-      orderId = created.id;
-    }
-    return orderId;
-  }
-
-  async function addOrderItem(){
-    const orderId = await upsertOrderForSelectedClient(); if(!orderId) return;
-
-    const kat = $('#oKategoria').value;
-    const odm = ($('#oOdmiana').value||'').trim();
-    if(!odm){ alert('Wybierz odmianę.'); return; }
-    const qty = Number($('#oQty').value||0); if(qty<=0){ alert('Podaj ilość ≥ 1'); return; }
-    const price = Number($('#oPrice').value||null);
-    const vendor = ($('#oVendor').value||'').trim()||null;
-
-    // SUMOWANIE: jeśli istnieje identyczna pozycja (kategoria+odmiana+cena), podbij ilość
-    const { data:dups, error:err0 } = await db.from('seedorders_items')
-      .select('id,ordered_qty,cena,kategoria,odmiana')
-      .eq('order_id', orderId).eq('kategoria', kat).eq('odmiana', odm).eq('cena', price).limit(1);
-
-    if(err0){ alert('Błąd sprawdzania pozycji: '+err0.message); return; }
-
-    if(dups && dups.length){
-      const it = dups[0];
-      const { error:errU } = await db.from('seedorders_items')
-        .update({ ordered_qty: (Number(it.ordered_qty||0)+qty) }).eq('id', it.id);
-      if(errU){ alert('Błąd aktualizacji pozycji: '+errU.message); return; }
-    }else{
-      const row = {
-        order_id: orderId,
-        kategoria: kat,
-        odmiana: odm,
-        cena: price,
-        dostawca: vendor,
-        ordered_qty: qty,
-        delivered_qty: 0,
-        created_at: nowISO()
-      };
-      const { error } = await db.from('seedorders_items').insert(row);
-      if(error){
-        // fallback na stare nazwy kolumn (jeśli w bazie pozostały: ilosc / wydano)
-        if(/column .* does not exist/i.test(error.message)){
-          const legacy = {
-            order_id: orderId, kategoria: kat, odmiana: odm, cena: price, dostawca: vendor,
-            ilosc: qty, wydano: 0, created_at: nowISO()
-          };
-          const { error:r2err } = await db.from('seedorders_items').insert(legacy);
-          if(r2err){ alert('Błąd pozycji (legacy): '+r2err.message); return; }
-        }else{
-          alert('Błąd pozycji: '+error.message); return;
-        }
-      }
-    }
-
-    $('#oOdmiana').value=''; $('#oQty').value='1'; $('#oPrice').value=''; $('#oVendor').value='';
-    await loadOrders(); await loadReport();
-  }
-
-  let orders = [];
-  async function loadOrders(){
-    const { data, error } = await db.from('seedorders_orders')
-      .select('id,client,phone,notes,status,created_at').order('created_at',{ascending:false}).limit(100);
-    if(error){ console.error(error); return; }
-    orders = data||[];
-    await renderOrders();
-  }
-
-  async function loadItemsFor(orderId){
-    const { data, error } = await db.from('seedorders_items')
-      .select('id,kategoria,odmiana,cena,dostawca,ordered_qty,delivered_qty,ilosc,wydano')
-      .eq('order_id', orderId);
-    if(error){ console.error(error); return []; }
-    return data.map(r=>({
-      id:r.id,
-      kategoria:r.kategoria, odmiana:r.odmiana, cena:r.cena, dostawca:r.dostawca,
-      ordered: r.ordered_qty ?? r.ilosc ?? 0,
-      delivered: r.delivered_qty ?? r.wydano ?? 0
-    }));
-  }
-
-  async function updateOrderStatusByItems(orderId){
-    const { data, error } = await db.from('seedorders_items')
-      .select('ordered_qty,delivered_qty,ilosc,wydano').eq('order_id', orderId);
-    if(error) return;
-    let totalOrd=0, totalDel=0;
-    data.forEach(r=>{
-      totalOrd += (r.ordered_qty ?? r.ilosc ?? 0);
-      totalDel += (r.delivered_qty ?? r.wydano ?? 0);
-    });
-    let status='zamówione';
-    if(totalDel>0 && totalDel<totalOrd) status='częściowo';
-    if(totalOrd>0 && totalDel>=totalOrd) status='dostarczone';
-    await db.from('seedorders_orders').update({status}).eq('id', orderId);
-  }
-
-  async function deleteOrderItem(itemId, orderId){
-    if(!confirm('Usunąć pozycję?')) return;
-    const { error } = await db.from('seedorders_items').delete().eq('id', itemId);
-    if(error){ alert('Błąd usuwania pozycji: '+error.message); return; }
-    await updateOrderStatusByItems(orderId);
-    await loadOrders(); await loadReport();
-  }
-
-  async function changeDelivery(itemId, delta){
-    // Pobierz rekord
-    const { data, error } = await db.from('seedorders_items')
-      .select('id, ordered_qty, delivered_qty, ilosc, wydano, order_id')
-      .eq('id', itemId).single();
-    if(error){ alert('Błąd odczytu pozycji: '+error.message); return; }
-
-    const ord = data.ordered_qty ?? data.ilosc ?? 0;
-    const del = data.delivered_qty ?? data.wydano ?? 0;
-    const next = Math.max(0, Math.min(ord, del + delta));
-
-    // Aktualizacja (wspiera obie nazwy kolumn)
-    const upd = {};
-    if('delivered_qty' in data) upd.delivered_qty = next;
-    if('wydano' in data)       upd.wydano = next;
-
-    const { error:errU } = await db.from('seedorders_items').update(upd).eq('id', itemId);
-    if(errU){ alert('Błąd zapisu: '+errU.message); return; }
-    await updateOrderStatusByItems(data.order_id);
-    await loadOrders(); await loadReport();
-  }
-
-  async function setDeliveredExact(itemId, orderId, inputEl){
-    const n = Number(inputEl.value||0);
-    if(isNaN(n) || n<0){ alert('Nieprawidłowa ilość.'); return; }
-    // sprawdź limit
-    const { data, error } = await db.from('seedorders_items')
-      .select('ordered_qty, ilosc').eq('id', itemId).single();
-    const ord = data?.ordered_qty ?? data?.ilosc ?? 0;
-    const val = Math.max(0, Math.min(ord, n));
-    const { error:e2 } = await db.from('seedorders_items')
-      .update({ delivered_qty: val, wydano: val }).eq('id', itemId);
-    if(e2){ alert('Błąd ustawiania wydania: '+e2.message); return; }
-    await updateOrderStatusByItems(orderId);
-    await loadOrders(); await loadReport();
-  }
-
-  async function deleteOrder(orderId){
-    if(!confirm('Usunąć całe zamówienie?')) return;
-    // bez FK CASCADE: najpierw items
-    await db.from('seedorders_items').delete().eq('order_id', orderId);
-    await db.from('seedorders_orders').delete().eq('id', orderId);
-    await loadOrders(); await loadReport();
-  }
-
-  async function renderOrders(){
-    const q = ($('#oSearch').value||'').toLowerCase();
-    const only = $('#oStatusFilter').value;
-    const box = $('#ordersContainer'); box.innerHTML='';
-
-    for(const o of orders){
-      const items = await loadItemsFor(o.id);
-      const hay = (`${o.client||''} ${o.notes||''} `+items.map(i=>i.odmiana).join(' ')).toLowerCase();
-      if(q && !hay.includes(q)) continue;
-      if(only && o.status!==only) continue;
-
-      const totalOrd = items.reduce((a,b)=>a+(b.ordered||0),0);
-      const totalDel = items.reduce((a,b)=>a+(b.delivered||0),0);
-      const totalRem = Math.max(0,totalOrd-totalDel);
-
-      let cls='sok', label='zamówione';
-      if(totalDel>0 && totalDel<totalOrd){ cls='swarn'; label='częściowo'; }
-      if(totalRem===0 && totalOrd>0){ cls='sdanger'; label='dostarczone'; }
-
-      const card = document.createElement('div'); card.className='order';
-      card.innerHTML = `
-        <div class="order-header">
-          <span class="status ${cls}">${label}</span>
-          <span class="chip">${new Date(o.created_at).toLocaleString('pl-PL')}</span>
-          <b>${o.client||''}</b>
-          <span class="muted">${o.phone||''}</span>
-          <span class="chip">Uwagi: ${o.notes||''}</span>
-          <span class="right"></span>
-          <select data-st="${o.id}">
-            <option ${o.status==='zamówione'?'selected':''}>zamówione</option>
-            <option ${o.status==='częściowo'?'selected':''}>częściowo</option>
-            <option ${o.status==='dostarczone'?'selected':''}>dostarczone</option>
-          </select>
-          <button class="btn-sm danger" data-del="${o.id}">Usuń</button>
-        </div>
-        <div class="order-body">
-          <table class="table">
-            <thead>
-              <tr><th>Kategoria</th><th>Odmiana</th><th>Cena</th><th>Zam.</th><th>Wydano</th><th>Pozostało</th><th>Wydaj</th><th></th></tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      `;
-
-      const tbody = card.querySelector('tbody');
-      items.forEach(it=>{
-        const tr=document.createElement('tr');
-        const remain = Math.max(0,(it.ordered||0)-(it.delivered||0));
-        tr.innerHTML = `
-          <td>${it.kategoria||''}</td>
-          <td>${it.odmiana||''}</td>
-          <td>${fmt(it.cena||0)}</td>
-          <td>${fmt(it.ordered||0)}</td>
-          <td>${fmt(it.delivered||0)}</td>
-          <td>${fmt(remain)}</td>
-          <td class="kbdrow">
-            <div class="flex">
-              <button class="btn-sm ghost" data-minus="${it.id}">−1</button>
-              <button class="btn-sm ghost" data-plus="${it.id}">+1</button>
-              <input data-exact="${it.id}" type="number" min="0" step="1" class="kbd" style="width:90px" placeholder="szt." />
-              <button class="btn-sm primary" data-set="${it.id}">Ustaw</button>
-            </div>
-          </td>
-          <td><button class="btn-sm warn" data-delete="${it.id}" data-order="${o.id}">Usuń</button></td>
-        `;
-        tbody.appendChild(tr);
-      });
-
-      // akcje nagłówka
-      card.querySelector(`[data-del="${o.id}"]`).onclick = ()=> deleteOrder(o.id);
-      card.querySelector(`[data-st="${o.id}"]`).onchange = async (e)=>{
-        await db.from('seedorders_orders').update({status:e.target.value}).eq('id',o.id);
-        await renderOrders();
-      };
-
-      // akcje pozycji
-      card.querySelectorAll('[data-minus]').forEach(b=> b.onclick=()=>changeDelivery(b.dataset.minus,-1));
-      card.querySelectorAll('[data-plus]').forEach(b=> b.onclick=()=>changeDelivery(b.dataset.plus,+1));
-      card.querySelectorAll('[data-delete]').forEach(b=> b.onclick=()=>deleteOrderItem(b.dataset.delete,b.dataset.order));
-      card.querySelectorAll('[data-set]').forEach(b=>{
-        b.onclick=()=>{
-          const inp = card.querySelector(`[data-exact="${b.dataset.set}"]`);
-          setDeliveredExact(b.dataset.set, o.id, inp);
-        };
-      });
-
-      box.appendChild(card);
-    }
-  }
-
-  // ====== RAPORT ======
-  function setDefaultReportRange(){
-    const d=new Date(), d2=new Date(); d.setDate(d.getDate()-30);
-    $('#rFrom').value = d.toISOString().slice(0,10);
-    $('#rTo').value   = d2.toISOString().slice(0,10);
-  }
-
-  async function loadReport(){
-    const from = $('#rFrom').value || '2000-01-01';
-    const to   = $('#rTo').value   || '2100-01-01';
-    const cat  = $('#rCat').value;
-
-    let query = db.from('seedorders_items')
-      .select('kategoria, odmiana, ordered_qty, delivered_qty, ilosc, wydano, created_at')
-      .gte('created_at', from).lte('created_at', to);
-
-    if(cat) query = query.eq('kategoria', cat);
-
-    const { data, error } = await query;
-    if(error){ alert('Błąd raportu: '+error.message); return; }
-
-    // Sumowanie
-    const sums = new Map();
-    for(const r of data){
-      const key = `${r.kategoria}||${r.odmiana}`;
-      const cur = sums.get(key)||{ kategoria:r.kategoria, odmiana:r.odmiana, zam:0, wyd:0 };
-      cur.zam += (r.ordered_qty ?? r.ilosc ?? 0);
-      cur.wyd += (r.delivered_qty ?? r.wydano ?? 0);
-      sums.set(key, cur);
-    }
-
-    const rows = [...sums.values()].sort((a,b)=> a.kategoria.localeCompare(b.kategoria)||a.odmiana.localeCompare(b.odmiana));
-    const tbody = $('#reportTable tbody'); tbody.innerHTML='';
-    let s1=0,s2=0;
-    rows.forEach(r=>{
-      const tr=document.createElement('tr');
-      const rem = Math.max(0, r.zam - r.wyd);
-      tr.innerHTML = `<td>${r.kategoria}</td><td>${r.odmiana}</td><td>${fmt(r.zam)}</td><td>${fmt(r.wyd)}</td><td>${fmt(rem)}</td>`;
-      tbody.appendChild(tr); s1+=r.zam; s2+=r.wyd;
-    });
-    const tr=document.createElement('tr');
-    tr.innerHTML = `<th colspan="2">RAZEM</th><th>${fmt(s1)}</th><th>${fmt(s2)}</th><th>${fmt(Math.max(0,s1-s2))}</th>`;
-    tbody.appendChild(tr);
-
-    $('#rRange').textContent = `${from} → ${to}`;
-    window.__report_cache = rows;  // do CSV
-  }
-
-  function downloadCSV(){
-    const rows = window.__report_cache || [];
-    const head = ['Kategoria','Odmiana','Zamówiono','Wydano','Pozostało'];
-    const csv = [head, ...rows.map(r=>[r.kategoria,r.odmiana,String(r.zam),String(r.wyd),String(Math.max(0,r.zam-r.wyd))])]
-      .map(row=>row.map(v=>String(v).replaceAll('"','""')).join(',')).join('\n');
-    const blob = new Blob([csv],{type:'text/csv;charset=utf-8'});
-    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`raport_${$('#rFrom').value}_${$('#rTo').value}.csv`; a.click();
-  }
-
-  // ====== START ======
-  (async function boot(){
-    setDefaultReportRange();
-    await setStatus();
-    await loadPrices();
-    await loadClients();
-    fillOdmianyFor($('#oKategoria').value);
-    await loadOrders();
-    await loadReport();
-  })();
-
-  // ====== ZDARZENIA UI ======
-  $('#refreshAll')?.addEventListener('click', async ()=>{ await setStatus(); await loadPrices(); await loadClients(); await loadOrders(); await loadReport(); });
-  $('#togglePrices')?.addEventListener('click', (e)=>{ const b=$('#pricesBody'); const btn=e.target; const hide=b.style.display==='none'; b.style.display= hide?'grid':'none'; btn.textContent= hide?'Ukryj':'Pokaż'; });
-  $('#toggleClients')?.addEventListener('click', (e)=>{ const b=$('#clientsBody'); const btn=e.target; const hide=b.style.display==='none'; b.style.display= hide?'grid':'none'; btn.textContent= hide?'Ukryj':'Pokaż'; });
-
-  $('#pSave')?.addEventListener('click', savePrice);
-  $('#pSearch')?.addEventListener('input', renderPrices);
-  $('#cSave')?.addEventListener('click', saveClient);
-  $('#cDelete')?.addEventListener('click', deleteClient);
-  $('#cSearch')?.addEventListener('input', renderClients);
-  $('#cRefresh')?.addEventListener('click', loadClients);
-  $('#addItem')?.addEventListener('click', addOrderItem);
-  $('#oSearch')?.addEventListener('input', renderOrders);
-  $('#oStatusFilter')?.addEventListener('change', renderOrders);
-  $('#oReload')?.addEventListener('click', loadOrders);
-  $('#rShow')?.addEventListener('click', loadReport);
-  $('#rCSV')?.addEventListener('click', downloadCSV);
-  </script>
 </div>
+
+<!-- Supabase SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+
+<script>
+/* ====== KONFIGURACJA SUPABASE (Twoje klucze) ====== */
+const SUPABASE_URL  = 'https://zseqkyjcqkuvrqxluihs.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzZXFreWpjcWt1dnJxeGx1aWhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzNDk2NjUsImV4cCI6MjA3NjkyNTY2NX0.ubbYQzYWiMyETohwKRnVQZaZRoIA-zwiX2YsY8TPsDk';
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth:{ persistSession:false }});
+
+/* ====== POMOCNICZE ====== */
+const $  = s => document.querySelector(s);
+const fmt = n => (n??0).toLocaleString('pl-PL');
+const nowISO = () => new Date().toISOString().slice(0,10);
+let ordersCache = []; // cache nagłówków dla renderowania
+
+// zegar
+setInterval(()=>{ const el=document.getElementById('clock'); if(el) el.textContent=new Date().toLocaleTimeString('pl-PL'); },1000);
+
+/* ====== STATUS ====== */
+async function setStatus(){
+  try{
+    const { error } = await db.from('seedorders_prices').select('id').limit(1);
+    const el = document.getElementById('status');
+    if(error){ el.textContent='offline'; el.className='chip bad'; }
+    else { el.textContent='online'; el.className='chip ok'; }
+  }catch{ const el=document.getElementById('status'); el.textContent='offline'; el.className='chip bad'; }
+}
+
+/* ====== CENNIK ====== */
+async function loadPrices(){
+  const q = (document.getElementById('pSearch').value||'').toLowerCase();
+  const { data, error } = await db.from('seedorders_prices').select('*').order('kategoria').order('odmiana');
+  if(error) return alert('Błąd cennika: '+error.message);
+  const tbody = document.getElementById('pricesT'); tbody.innerHTML='';
+  (data||[]).filter(r=>{
+    const s = `${r.odmiana||''} ${r.kategoria||''} ${r.dostawca||''}`.toLowerCase();
+    return s.includes(q);
+  }).forEach(r=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${r.odmiana||''}</td>
+      <td>${r.kategoria||''}</td>
+      <td class="right">${r.cena!=null? fmt(r.cena):''}</td>
+      <td>${r.dostawca||''}</td>
+      <td class="right"><button class="btn-sm warn" data-delprice="${r.id}">Usuń</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll('[data-delprice]').forEach(b=> b.onclick=()=>deletePrice(b.dataset.delprice));
+}
+async function savePrice(){
+  const row = {
+    kategoria: document.getElementById('pCategory').value||'',
+    odmiana:   document.getElementById('pVar').value||'',
+    cena:      document.getElementById('pPrice').value ? Number(document.getElementById('pPrice').value) : null,
+    dostawca:  document.getElementById('pVendor').value||null
+  };
+  if(!row.odmiana){ alert('Podaj odmianę'); return; }
+  const { error } = await db.from('seedorders_prices').upsert(row);
+  if(error) alert('Błąd zapisu cennika: '+error.message);
+  await loadPrices();
+}
+async function deletePrice(id){
+  if(!confirm('Usunąć pozycję z cennika?')) return;
+  const { error } = await db.from('seedorders_prices').delete().eq('id', id);
+  if(error) alert('Błąd usuwania: '+error.message);
+  await loadPrices();
+}
+
+/* ====== KONTRAHENCI ====== */
+async function loadClients(){
+  const q = (document.getElementById('cSearch').value||'').toLowerCase();
+  const { data, error } = await db.from('seedorders_clients').select('*').order('name');
+  if(error) return alert('Błąd klientów: '+error.message);
+
+  const tbody = document.getElementById('clientsT'); tbody.innerHTML='';
+  const combo = document.getElementById('oClient'); combo.innerHTML='';
+  (data||[]).forEach(c=>{
+    const ok = `${c.name||''} ${c.phone||''} ${c.address||''}`.toLowerCase().includes(q);
+    if(ok){
+      const tr=document.createElement('tr');
+      tr.innerHTML = `<td>${c.name||''}</td><td>${c.phone||''}</td><td>${c.address||''}</td>`;
+      tbody.appendChild(tr);
+    }
+    const opt = document.createElement('option');
+    opt.value = c.id; opt.textContent = c.name||'(bez nazwy)';
+    combo.appendChild(opt);
+  });
+}
+async function saveClient(){
+  const row = { 
+    name:document.getElementById('cName').value||'', 
+    phone:document.getElementById('cPhone').value||'', 
+    address:document.getElementById('cAddr').value||'' 
+  };
+  if(!row.name){ alert('Podaj nazwę'); return; }
+  const { error } = await db.from('seedorders_clients').upsert(row);
+  if(error) alert('Błąd zapisu klienta: '+error.message);
+  await loadClients();
+}
+async function deleteClient(){
+  const name = document.getElementById('cName').value||'';
+  if(!name){ alert('Podaj nazwę (klucz) do usunięcia'); return; }
+  if(!confirm(`Usunąć klienta: ${name}?`)) return;
+  const { error } = await db.from('seedorders_clients').delete().eq('name', name);
+  if(error) alert('Błąd usuwania klienta: '+error.message);
+  await loadClients();
+}
+
+/* ====== LISTA ODMIAN wg kategorii (formularz) ====== */
+async function fillOdmianyFor(cat){
+  document.getElementById('oVar').innerHTML='';
+  const { data, error } = await db.from('seedorders_prices').select('odmiana').eq('kategoria', cat).order('odmiana');
+  if(error) return;
+  (data||[]).forEach(r=>{
+    const opt=document.createElement('option'); opt.textContent=r.odmiana; opt.value=r.odmiana;
+    document.getElementById('oVar').appendChild(opt);
+  });
+}
+
+/* ====== ZAMÓWIENIA (nagłówek + pozycja) ====== */
+async function addOrderItem(){
+  const client_id = document.getElementById('oClient').value;
+  if(!client_id){ alert('Wybierz klienta'); return; }
+  const { data:cli } = await db.from('seedorders_clients').select('*').eq('id', client_id).single();
+
+  // nagłówek
+  const head = {
+    client: cli?.name || '(client)',
+    phone:  cli?.phone || '',
+    notes:  document.getElementById('oNotes').value || null,
+    created_at: new Date().toISOString()
+  };
+  const { data:o, error:eH } = await db.from('seedorders_orders').insert(head).select().single();
+  if(eH){ alert('Błąd nagłówka: '+eH.message); return; }
+
+  // pozycja
+  const qty = Number(document.getElementById('oQty').value||0);
+  const price = document.getElementById('oPrice').value ? Number(document.getElementById('oPrice').value) : null;
+  const item = {
+    order_id:o.id,
+    kategoria: document.getElementById('oCategory').value,
+    odmiana:   document.getElementById('oVar').value,
+    ordered_qty: qty, ilosc: qty,          // wspieramy starą i nową nazwę
+    delivered_qty: 0, wydano: 0,           // jw.
+    cena: price,
+    dostawca: document.getElementById('oVendor').value||null
+  };
+  const { error:e2 } = await db.from('seedorders_items').insert(item);
+  if(e2) alert('Błąd dodawania pozycji: '+e2.message);
+
+  await loadOrders();
+  await loadReport();
+}
+
+/* ====== STATUS nagłówka po pozycjach ====== */
+async function updateOrderStatusByItems(orderId){
+  const { data:items, error } = await db.from('seedorders_items')
+    .select('ordered_qty, ilosc, delivered_qty, wydano')
+    .eq('order_id', orderId);
+  if(error) return;
+  let sumOrd=0, sumDel=0;
+  for(const it of (items||[])){
+    const o = it.ordered_qty ?? it.ilosc ?? 0;
+    const d = it.delivered_qty ?? it.wydano ?? 0;
+    sumOrd += Number(o||0); sumDel += Number(d||0);
+  }
+  const status = (sumDel<=0) ? 'zamówione' : (sumDel<sumOrd ? 'częściowo' : 'dostarczone');
+  await db.from('seedorders_orders').update({ status }).eq('id', orderId);
+}
+
+/* ====== POBIERANIE I RENDER ZAMÓWIEŃ ====== */
+async function loadOrders(){
+  const { data:heads, error } = await db.from('seedorders_orders')
+    .select('*').order('created_at', { ascending:false }).limit(200);
+  if(error){ alert('Błąd zamówień: '+error.message); return; }
+  ordersCache = heads||[];
+
+  const ids = ordersCache.map(o=>o.id);
+  const { data:items } = ids.length
+    ? await db.from('seedorders_items').select('*').in('order_id', ids)
+    : { data: [] };
+
+  const byOrder = new Map();
+  (items||[]).forEach(it=>{
+    if(!byOrder.has(it.order_id)) byOrder.set(it.order_id, []);
+    byOrder.get(it.order_id).push(it);
+  });
+
+  renderOrders(ordersCache, byOrder);
+}
+
+function renderOrders(heads, itemsByOrder){
+  const q = (document.getElementById('oSearch').value||'').toLowerCase();
+  const only = document.getElementById('oStatusFilter').value;
+  const box = document.getElementById('ordersContainer'); box.innerHTML='';
+
+  /* >>> JEDYNA ZMIANA: sort zamówień (zamówione -> częściowo -> dostarczone NA DÓŁ) */
+  const rank = s => (s==='dostarczone') ? 2 : (s==='częściowo' ? 1 : 0);
+  const sorted = (heads||[]).slice().sort((a,b)=>{
+    const r = rank(a.status||'') - rank(b.status||'');
+    if(r!==0) return r;
+    return new Date(b.created_at) - new Date(a.created_at); // nowsze wyżej
+  });
+  /* <<< KONIEC ZMIANY */
+
+  for(const o of sorted){
+    if(only && (o.status||'')!==only) continue;
+    const items = itemsByOrder.get(o.id)||[];
+
+    const text = `${o.client||''} ${o.phone||''} ${o.notes||''} ${items.map(i=>`${i.kategoria} ${i.odmiana}`).join(' ')}`.toLowerCase();
+    if(q && !text.includes(q)) continue;
+
+    const card = document.createElement('div');
+    card.className='panel';
+    card.innerHTML = `
+      <div class="flex">
+        <div class="grow"><b>${o.client||''}</b> <span class="muted">(${o.phone||''})</span><br>
+          <span class="small muted">${(o.created_at||'').slice(0,10)} · ${o.notes||''}</span>
+        </div>
+        <span class="chip">${o.status||'zamówione'}</span>
+        <button class="ghost btn-sm" data-recalc="${o.id}">Przelicz status</button>
+      </div>
+      <table class="small">
+        <thead><tr><th>Kategoria</th><th>Odmiana</th><th class="right">Zam.</th><th class="right">Wyd.</th><th class="right">Cena</th><th class="right">Brutto</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    `;
+    const tbody = card.querySelector('tbody');
+
+    items.forEach(it=>{
+      const ord = Number((it.ordered_qty ?? it.ilosc) || 0);
+      const del = Number((it.delivered_qty ?? it.wydano) || 0);
+      const price = it.cena ?? null;
+      const brutto = (price!=null) ? Number(price)*ord : '';
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${it.kategoria||''}</td>
+        <td>${it.odmiana||''}</td>
+        <td class="right">${fmt(ord)}</td>
+        <td class="right">${fmt(del)}</td>
+        <td class="right">${price!=null ? fmt(price) : ''}</td>
+        <td class="right">${brutto!=='' ? fmt(brutto) : ''}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    card.querySelector('[data-recalc]')?.addEventListener('click', ()=>updateOrderStatusByItems(o.id));
+    box.appendChild(card);
+  }
+}
+
+/* ====== RAPORT ====== */
+function setDefaultReportRange(){
+  const d=new Date(); const y=d.getFullYear(); const m=String(d.getMonth()+1).padStart(2,'0');
+  document.getElementById('rFrom').value = `${y}-${m}-01`;
+  document.getElementById('rTo').value   = nowISO();
+  document.getElementById('rRange').textContent = `${document.getElementById('rFrom').value} → ${document.getElementById('rTo').value}`;
+}
+async function loadReport(){
+  const from = document.getElementById('rFrom').value || '2000-01-01';
+  const to   = document.getElementById('rTo').value   || '2100-01-01';
+  const cat  = document.getElementById('rCat').value;
+
+  let q = db.from('seedorders_items')
+    .select('odmiana, kategoria, ordered_qty, delivered_qty, created_at, ilosc, wydano')
+    .gte('created_at', from).lte('created_at', to);
+  if(cat) q = q.eq('kategoria', cat);
+
+  const { data, error } = await q;
+  if(error){ alert('Błąd raportu: '+error.message); return; }
+
+  const sums = {};
+  (data||[]).forEach(r=>{
+    const key = `${r.kategoria}||${r.odmiana}`;
+    if(!sums[key]) sums[key]={kat:r.kategoria, odm:r.odmiana, zam:0, wyd:0};
+    sums[key].zam += Number((r.ordered_qty ?? r.ilosc) || 0);
+    sums[key].wyd += Number((r.delivered_qty ?? r.wydano) || 0);
+  });
+
+  const tbody = document.getElementById('reportT'); tbody.innerHTML='';
+  Object.values(sums).forEach(s=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML = `<td>${s.kat}</td><td>${s.odm}</td><td class="right">${fmt(s.zam)}</td><td class="right">${fmt(s.wyd)}</td>`;
+    tbody.appendChild(tr);
+  });
+  document.getElementById('rRange').textContent = `${from} → ${to}`;
+}
+
+/* ====== START ====== */
+(async()=>{
+  setDefaultReportRange();
+  await setStatus();
+  await loadPrices();
+  await loadClients();
+  await fillOdmianyFor(document.getElementById('oCategory').value);
+  await loadOrders();
+  await loadReport();
+})();
+
+/* ====== ZDARZENIA UI ====== */
+document.getElementById('refreshAll').addEventListener('click', async ()=>{
+  await setStatus(); await loadPrices(); await loadClients(); await loadOrders(); await loadReport();
+});
+document.getElementById('pSave').addEventListener('click',  savePrice);
+document.getElementById('pSearch').addEventListener('input', loadPrices);
+
+document.getElementById('cSave').addEventListener('click',  saveClient);
+document.getElementById('cDelete').addEventListener('click', deleteClient);
+document.getElementById('cSearch').addEventListener('input', loadClients);
+document.getElementById('cRefresh').addEventListener('click', loadClients);
+
+document.getElementById('oCategory').addEventListener('change', ()=>fillOdmianyFor(document.getElementById('oCategory').value));
+document.getElementById('addItem').addEventListener('click', addOrderItem);
+document.getElementById('oSearch').addEventListener('input', loadOrders);
+document.getElementById('oStatusFilter').addEventListener('change', loadOrders);
+document.getElementById('oReload').addEventListener('click', loadOrders);
+document.getElementById('rShow').addEventListener('click', loadReport);
+</script>
 </body>
 </html>
-
