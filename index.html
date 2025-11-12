@@ -11,18 +11,18 @@
       --chip:#101827;
     }
     *{box-sizing:border-box}
-    body{margin:0;font:15px/1.4 ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial;color:var(--text);background:var(--bg)}
+    body{margin:0;font:15px/1.4 ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial;color:var(--text);background:#0b1020}
     .wrap{max-width:1200px;margin:auto;padding:16px;display:grid;gap:16px}
-    .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+    .panel{background:#111936;border:1px solid var(--line);border-radius:12px;padding:14px}
     .flex{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
     h1{font-size:20px;margin:0}
     h2{font-size:16px;margin:0 0 6px 0;color:#dbe7ff}
-    input,select,button,textarea{background:#0e1436;border:1px solid var(--line);color:var(--text);padding:10px;border-radius:10px;outline:none}
+    input,select,button,textarea{background:#0e1436;border:1px solid var(--line);color:#e9f0ff;padding:10px;border-radius:10px;outline:none}
     input::placeholder,textarea::placeholder{color:#7481a8}
     button{cursor:pointer}
     button.primary{background:var(--accent);color:#042016;font-weight:600;border:0}
     button.warn{background:var(--danger);color:#fff;border:0}
-    button.ghost{background:#0f1a43;border:1px solid var(--line);color:var(--text)}
+    button.ghost{background:#0f1a43;border:1px solid var(--line);color:#e9f0ff}
     .btn-sm{padding:6px 10px;border-radius:9px;font-size:13px}
     table{width:100%;border-collapse:collapse}
     th,td{padding:8px;border-bottom:1px solid var(--line);vertical-align:top}
@@ -177,13 +177,47 @@
 
 </div>
 
-<!-- Supabase -->
+<!-- Supabase UMD -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script>
-  // ====== KONFIG (z Twojego pliku) ======
-  const SUPABASE_URL  = 'https://zseqkyjcqkuvrqxluihs.supabase.co';          
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzZXFreWpjcWt1dnJxeGx1aWhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzNDk2NjUsImV4cCI6MjA3NjkyNTY2NX0.ubbYQzYWiMyETohwKRnVQZaZRoIA-zwiX2YsY8TPsDk';
-  const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth:{persistSession:false} });
+  // ====== AUTO-FALLBACK: 2 zestawy kluczy (najpierw nowe, potem wcześniejsze) ======
+  const CREDS = [
+    { // NOWY (który podałeś ostatnio)
+      url: 'https://zseqkyjcqkuvrqxluihs.supabase.co',
+      key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzZXFreWpjcWt1dnJxeGx1aWhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzNDk2NjUsImV4cCI6MjA3NjkyNTY2NX0.ubbYQzYWiMyETohwKRnVQZaZRoIA-zwiX2YsY8TPsDk'
+    },
+    { // POPRZEDNI (na którym wcześniej były Twoje tabele)
+      url: 'https://llatxyfdpurbniewhjft.supabase.co',
+      key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxsYXR4eWZkcHVyYm5pZXdoamZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU2NzA1NzgsImV4cCI6MjA3MTI0NjU3OH0.Q8EJPQN-XsgRnw6dltGUS-DGcf8SiMAX886NUQAcDqY'
+    }
+  ];
+
+  let db = null;
+  let activeCred = null;
+
+  async function initSupabase() {
+    const statusEl = document.getElementById('status');
+    for (const c of CREDS) {
+      try {
+        const client = supabase.createClient(c.url, c.key, { auth:{persistSession:false} });
+        // szybki ping: spróbuj odczytać 1 wiersz z cen
+        const { data, error } = await client.from('seedorders_prices').select('id').limit(1);
+        if (!error) {
+          db = client; activeCred = c;
+          statusEl.textContent = 'online'; statusEl.className = 'chip ok';
+          console.log('[SeedOrders] Połączono z:', c.url);
+          return true;
+        } else {
+          console.warn('[SeedOrders] Błąd przy', c.url, error?.message);
+        }
+      } catch(e) {
+        console.warn('[SeedOrders] Wyjątek przy', c.url, e?.message||e);
+      }
+    }
+    statusEl.textContent = 'offline'; statusEl.className = 'chip bad';
+    console.error('[SeedOrders] Nie udało się nawiązać połączenia z żadnym projektem.');
+    return false;
+  }
 
   // ====== POMOCNICZE ======
   const $ = s=>document.querySelector(s);
@@ -192,7 +226,7 @@
   // zegar
   setInterval(()=>{ const el=$('#clock'); if(el) el.textContent=new Date().toLocaleTimeString('pl-PL'); },1000);
 
-  // ====== STATUS ======
+  // ====== STATUS (korzysta z aktywnego db) ======
   async function setStatus(){
     try{
       const { error } = await db.from('seedorders_prices').select('id').limit(1);
@@ -407,12 +441,12 @@
     return 0; // zamówione
   }
 
-  function renderOrders(){
+  async function renderOrders(){
     const q = ($('#oSearch').value||'').toLowerCase();
     const only = $('#oStatusFilter').value;
     const box = $('#ordersContainer'); box.innerHTML='';
 
-    // TYLKO SORTOWANIE: zamówione -> częściowo -> dostarczone, nowsze wyżej
+    // sort: zamówione -> częściowo -> dostarczone, nowsze wyżej
     const __sorted = (orders||[]).slice().sort((a,b)=>{
       const r = __rankStatus(a.status||'') - __rankStatus(b.status||'');
       if(r!==0) return r;
@@ -527,6 +561,8 @@
 
   // ====== START ======
   (async()=>{
+    const ok = await initSupabase();  // <— najpierw spróbuj połączenia (z fallbackiem)
+    if(!ok) return;                   // jeśli brak połączenia, nie ciągnij dalej
     setDefaultReportRange();
     await setStatus();
     await loadPrices();
@@ -537,10 +573,17 @@
   })();
 
   // ====== UI ======
-  $('#refreshAll').addEventListener('click', async ()=>{ await setStatus(); await loadPrices(); await loadClients(); await loadOrders(); await loadReport(); });
-
-  $('#togglePrices').addEventListener('click', (e)=>{ const b=$('#pricesBody'); const hide=b.style.display==='none'; b.style.display=hide?'grid':'none'; e.target.textContent=hide?'Ukryj':'Pokaż'; });
-  $('#toggleClients').addEventListener('click',(e)=>{ const b=$('#clientsBody'); const hide=b.style.display==='none'; b.style.display=hide?'grid':'none'; e.target.textContent=hide?'Ukryj':'Pokaż'; });
+  $('#refreshAll').addEventListener('click', async ()=>{
+    await setStatus(); await loadPrices(); await loadClients(); await loadOrders(); await loadReport();
+  });
+  $('#togglePrices').addEventListener('click', (e)=>{
+    const b=$('#pricesBody'); const hide=b.style.display==='none';
+    b.style.display=hide?'grid':'none'; e.target.textContent=hide?'Ukryj':'Pokaż';
+  });
+  $('#toggleClients').addEventListener('click',(e)=>{
+    const b=$('#clientsBody'); const hide=b.style.display==='none';
+    b.style.display=hide?'grid':'none'; e.target.textContent=hide?'Ukryj':'Pokaż';
+  });
 
   $('#pSave').addEventListener('click',savePrice);
   $('#pSearch').addEventListener('input',loadPrices);
