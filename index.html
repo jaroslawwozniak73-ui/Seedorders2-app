@@ -321,13 +321,12 @@
     await loadReport();
   }
 
-  // ====== Items loader / status fixer ======
   async function loadItemsFor(orderId){
     const { data, error } = await db.from('seedorders_items')
       .select('id,kategoria,odmiana,cena,dostawca,ordered_qty,delivered_qty,ilosc,wydano')
       .eq('order_id', orderId);
     if(error){ console.error(error); return []; }
-    return data.map(r=>({
+    return (data||[]).map(r=>({
       id:r.id,
       kategoria:r.kategoria, odmiana:r.odmiana, cena:r.cena, dostawca:r.dostawca,
       ordered: r.ordered_qty ?? r.ilosc ?? 0,
@@ -351,7 +350,6 @@
 
   // ====== Wydawanie (−1 / +1 / ustaw dokładnie) ======
   async function changeDelivery(itemId, delta){
-    // Pobierz rekord
     const { data, error } = await db.from('seedorders_items')
       .select('id, ordered_qty, delivered_qty, ilosc, wydano, order_id')
       .eq('id', itemId).single();
@@ -361,7 +359,6 @@
     const del = data.delivered_qty ?? data.wydano ?? 0;
     const next = Math.max(0, Math.min(ord, del + delta));
 
-    // Aktualizacja (wspiera obie nazwy kolumn)
     const upd = {};
     if('delivered_qty' in data) upd.delivered_qty = next;
     if('wydano' in data)       upd.wydano = next;
@@ -375,7 +372,6 @@
   async function setDeliveredExact(itemId, orderId, inputEl){
     const n = Number(inputEl.value||0);
     if(isNaN(n) || n<0){ alert('Nieprawidłowa ilość.'); return; }
-    // sprawdź limit
     const { data, error } = await db.from('seedorders_items')
       .select('ordered_qty, ilosc').eq('id', itemId).single();
     const ord = data?.ordered_qty ?? data?.ilosc ?? 0;
@@ -395,7 +391,6 @@
     await loadOrders(); await loadReport();
   }
 
-  // ====== POBIERANIE i RENDER ZAMÓWIEŃ ======
   let orders = [];
   async function loadOrders(){
     const { data, error } = await db.from('seedorders_orders')
@@ -405,19 +400,24 @@
     await renderOrders();
   }
 
-  async function renderOrders(){
+  // === sort helper: zamówione -> częściowo -> dostarczone ===
+  function __rankStatus(s){
+    if(s === 'dostarczone') return 2;
+    if(s === 'częściowo')   return 1;
+    return 0; // zamówione
+  }
+
+  function renderOrders(){
     const q = ($('#oSearch').value||'').toLowerCase();
     const only = $('#oStatusFilter').value;
     const box = $('#ordersContainer'); box.innerHTML='';
 
-    /* >>> JEDYNA ZMIANA: sort zamówień (zamówione -> częściowo -> dostarczone NA DÓŁ) */
-    const __rank = s => (s==='dostarczone') ? 2 : (s==='częściowo' ? 1 : 0);
+    // TYLKO SORTOWANIE: zamówione -> częściowo -> dostarczone, nowsze wyżej
     const __sorted = (orders||[]).slice().sort((a,b)=>{
-      const r = __rank(a.status||'') - __rank(b.status||'');
+      const r = __rankStatus(a.status||'') - __rankStatus(b.status||'');
       if(r!==0) return r;
-      return new Date(b.created_at) - new Date(a.created_at); // nowsze wyżej
+      return new Date(b.created_at) - new Date(a.created_at);
     });
-    /* <<< KONIEC ZMIANY */
 
     for(const o of __sorted){
       const items = await loadItemsFor(o.id);
@@ -472,7 +472,6 @@
         tbody.appendChild(tr);
       }
 
-      // akcje pozycji
       card.querySelectorAll('[data-minus]').forEach(b=> b.onclick=()=>changeDelivery(b.dataset.minus,-1));
       card.querySelectorAll('[data-plus]').forEach(b=> b.onclick=()=>changeDelivery(b.dataset.plus,+1));
       card.querySelectorAll('[data-delete]').forEach(b=> b.onclick=()=>deleteOrderItem(b.dataset.delete,b.dataset.order));
